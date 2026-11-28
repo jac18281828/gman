@@ -46,6 +46,7 @@
 #include "gmanraypolygon.h"
 #include "gmanvector.h"
 #include "gmanvsperspective.h"
+#include "gmanworld.h"
 #include "pathtracerarealightscene.h"
 #include "pathtracerscene.h"
 #include "ri.h"
@@ -155,23 +156,24 @@ void renderTwoLightFloor(std::unique_ptr<GMANFrameBuffer>& frameBufferOut,
       new gman::VSPerspective(kFloorRes, kFloorRes, biasedScreenWindow(), identity, 90.0f, 0.5f, 50.0f));
 
   GMANPathtraceRenderer renderer;
+  GMANWorld world;
   auto floor = buildFloor();
   gman::Appearance floorAppearance;
   floorAppearance.shader = loadShader("matte", matteParams(1.0f));
   floorAppearance.Cs = GMANColor(0.5f, 0.5f, 0.5f);
   floorAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   floor->setAppearance(floorAppearance);
-  renderer.getWorldManager()->add(std::move(floor));
+  world.add(std::move(floor));
 
   GMANLight const areaLight1(GMAN_LIGHT_AREA, GMANColor(kAreaLe, kAreaLe, kAreaLe), GMANPoint(), GMANVector());
-  addEmittingSphere(renderer, areaLight1, kSphere1Radius, kSphere1CentreX, kSphere1CentreY, kSphere1CentreZ);
+  addEmittingSphere(world, areaLight1, kSphere1Radius, kSphere1CentreX, kSphere1CentreY, kSphere1CentreZ);
 
   GMANLight const areaLight2(GMAN_LIGHT_AREA, GMANColor(kSphere2Le, kSphere2Le, kSphere2Le), GMANPoint(), GMANVector());
-  addEmittingSphere(renderer, areaLight2, kSphere2Radius, kSphere2CentreX, kSphere2CentreY, kSphere2CentreZ);
+  addEmittingSphere(world, areaLight2, kSphere2Radius, kSphere2CentreX, kSphere2CentreY, kSphere2CentreZ);
 
   frameBufferOut.reset(new GMANFrameBuffer(kFloorRes, kFloorRes, options.getBackground()));
   GMANAttributes const attr;
-  renderer.render(frameBufferOut.get(), viewingSysOut.get(), options, attr);
+  renderer.render(world, frameBufferOut.get(), viewingSysOut.get(), options, attr);
   droppedOut = renderer.droppedPathCount();
 }
 

@@ -26,9 +26,12 @@
  * through a plain delete.
  */
 
+#include <ranges>
+
 #include "constantindirectconstants.h"
 #include "gmanindirectpass.h"
 #include "gmanloadable.h"
+#include "gmanworld.h"
 
 namespace {
 
@@ -42,8 +45,8 @@ public:
   ConstantIndirectPass() { ++liveCount(); }
   ~ConstantIndirectPass() override { --liveCount(); }
 
-  void prepare(GMANWorldManager& world, GMANRayOccluder const& /*occluder*/, GMANOptions const& /*options*/) override {
-    ready_ = world.getFirst() != nullptr;
+  void prepare(GMANWorld const& world, GMANRayOccluder const& /*occluder*/, GMANOptions const& /*options*/) override {
+    ready_ = !std::ranges::empty(world);
   }
 
   GMANColor irradiance(GMANHit const& /*hit*/, GMANVector const& /*I*/) const override {

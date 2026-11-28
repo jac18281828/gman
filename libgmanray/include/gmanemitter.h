@@ -34,7 +34,7 @@
 #include "gmanpoint.h"
 #include "gmanrayprimitive.h"
 #include "gmanvector.h"
-#include "gmanworldmanager.h"
+#include "gmanworld.h"
 #include "ri.h"
 
 /*
@@ -142,7 +142,7 @@ struct GMANRAY_EXPORT EmitterPoint {
 // unsupported. ambientCount, when non-null, receives the same walk's own
 // count of distinct ambient lights -- a caller that also needs that count
 // takes it from this one pass over world rather than walking it again.
-GMANRAY_EXPORT std::vector<Emitter> emitters(GMANWorldManager& world, std::size_t* ambientCount = nullptr);
+GMANRAY_EXPORT std::vector<Emitter> emitters(GMANWorld const& world, std::size_t* ambientCount = nullptr);
 
 // The index in emitters of the first emitter a ray that hit hitPrimitive has
 // met: the one whose shape is hitPrimitive itself or, when hitPrimitive is a

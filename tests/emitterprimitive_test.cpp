@@ -41,7 +41,6 @@
 #include "check.h"
 #include "gmancolor.h"
 #include "gmanemitter.h"
-#include "gmanlinearworldmanager.h"
 #include "gmanmath.h"
 #include "gmanowned.h"
 #include "gmanparameterlist.h"
@@ -52,6 +51,7 @@
 #include "gmansampling.h"
 #include "gmanshading.h"
 #include "gmanvector.h"
+#include "gmanworld.h"
 #include "ri.h"
 #include "samplingstats.h"
 #include "taggedmesh.h"
@@ -73,7 +73,7 @@ template <class Shape> std::size_t emittedCount(gman::Owned<Shape> shape) {
   appearance.areaLight = &light;
   shape->setAppearance(appearance);
 
-  GMANLinearWorldManager world;
+  GMANWorld world;
   world.add(std::move(shape));
   return gman::emitters(world).size();
 }

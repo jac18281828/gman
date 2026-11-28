@@ -57,7 +57,6 @@
 
 #include "check.h"
 #include "gmanlightsourcemgr.h"
-#include "gmanlinearworldmanager.h"
 #include "gmanmatrix4.h"
 #include "gmanowned.h"
 #include "gmanparameterlist.h"
@@ -66,6 +65,7 @@
 #include "gmanrayoccluder.h"
 #include "gmanraysphere.h"
 #include "gmantransform.h"
+#include "gmanworld.h"
 #include "maketransform.h"
 
 #if defined(__SANITIZE_ADDRESS__)
@@ -123,14 +123,14 @@ void setPartlyTransparent(GMANRayPrimitive* primitive) {
 // x-spread, y-alternating spheres (the peak-stack probe's own target) plus
 // 3 more, overlapping along z well away from them (the hit/transmission
 // probes' own target).
-void buildFixture(GMANLinearWorldManager& worldManager) {
+void buildFixture(GMANWorld& world) {
   for (std::size_t i = 0; i < kStackSphereCount; ++i) {
     RtFloat const x = kStackSpacing * (RtFloat)i;
     RtFloat const y = (i % 2 == 0) ? kStackOffset : -kStackOffset;
     auto sphere = gman::make<GMANRaySphere>(kStackRadius, -kStackRadius, kStackRadius, 360.0, GMANParameterList(),
                                             translated(x, y, 0.0));
     setPartlyTransparent(sphere.get());
-    worldManager.add(std::move(sphere));
+    world.add(std::move(sphere));
   }
 
   for (std::size_t i = 0; i < kOverlapSphereCount; ++i) {
@@ -138,7 +138,7 @@ void buildFixture(GMANLinearWorldManager& worldManager) {
     auto sphere = gman::make<GMANRaySphere>(kOverlapRadius, -kOverlapRadius, kOverlapRadius, 360.0, GMANParameterList(),
                                             translated(kOverlapX, 0.0, z));
     setPartlyTransparent(sphere.get());
-    worldManager.add(std::move(sphere));
+    world.add(std::move(sphere));
   }
 }
 
@@ -255,12 +255,12 @@ void testTransmissionBatch(GMANRayOccluder const& occluder) {
 } // namespace
 
 int main() {
-  GMANLinearWorldManager worldManager;
-  buildFixture(worldManager);
+  GMANWorld world;
+  buildFixture(world);
 
   GMANRayBVH bvh;
   long const beforeBuild = raybvhAllocationCount();
-  bvh.build(worldManager);
+  bvh.build(world);
   long const afterBuild = raybvhAllocationCount();
   checkAllocationDelta(afterBuild > beforeBuild, "the counter sees build()'s own allocations");
 

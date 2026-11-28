@@ -90,6 +90,7 @@
 #include "gmantransform.h"
 #include "gmanvector.h"
 #include "gmanvsperspective.h"
+#include "gmanworld.h"
 #include "maketransform.h"
 #include "pathtracerarealightscene.h"
 #include "pathtracerscene.h"
@@ -232,6 +233,7 @@ struct FloorScene {
   GMANMatrix4 const identity;
   gman::VSPerspective viewingSys;
   GMANPathtraceRenderer renderer;
+  GMANWorld world;
 
   explicit FloorScene(Lighting lighting)
       : distantLight(GMAN_LIGHT_DISTANT, GMANColor(kDistantIntensity, kDistantIntensity, kDistantIntensity),
@@ -247,7 +249,7 @@ struct FloorScene {
       appearance.lights = {&distantLight};
     }
     floor->setAppearance(appearance);
-    renderer.getWorldManager()->add(std::move(floor));
+    world.add(std::move(floor));
     if (lighting == Lighting::emittingDisk) {
       addEmittingDisk();
     }
@@ -263,7 +265,7 @@ struct FloorScene {
     appearance.areaLight = &areaLight;
     appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
     disk->setAppearance(appearance);
-    renderer.getWorldManager()->add(std::move(disk));
+    world.add(std::move(disk));
   }
 
   Frame render(RtInt maximum, RtFloat variance, Minsamples const& minsamples = std::nullopt) {
@@ -281,7 +283,7 @@ struct FloorScene {
     GMANFrameBuffer frameBuffer(kWidth, kHeight, kBlack);
     GMANAttributes const attributes;
     beginLogCapture(kRenderLog);
-    renderer.render(&frameBuffer, &viewingSys, options, attributes);
+    renderer.render(world, &frameBuffer, &viewingSys, options, attributes);
     Frame frame;
     frame.log = endLogCapture(kRenderLog);
     frame.counts = renderer.slotPathCounts();

@@ -37,7 +37,6 @@
 #include "check.h"
 #include "gmanemitter.h"
 #include "gmanlightsourcemgr.h"
-#include "gmanlinearworldmanager.h"
 #include "gmanmatrix4.h"
 #include "gmanowned.h"
 #include "gmanparameterlist.h"
@@ -46,6 +45,7 @@
 #include "gmanrayprimitive.h"
 #include "gmanraysphere.h"
 #include "gmantransform.h"
+#include "gmanworld.h"
 #include "maketransform.h"
 #include "ri.h"
 
@@ -82,7 +82,7 @@ void testTrueExemptions() {
 // distance pi from p, enumerated through gman::emitters as the renderer
 // itself would. pointLight and areaLight must outlive the returned
 // emitters; host and areaSphere receive the two hosting primitives.
-std::vector<gman::Emitter> buildTwoLightEmitters(GMANLinearWorldManager& world, GMANLight const& pointLight,
+std::vector<gman::Emitter> buildTwoLightEmitters(GMANWorld& world, GMANLight const& pointLight,
                                                  GMANLight const& areaLight, GMANRaySphere*& host,
                                                  GMANRaySphere*& areaSphere) {
   auto hostOwner = gman::make<GMANRaySphere>(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList());
@@ -122,7 +122,7 @@ void findDeltaAndAreaIndex(std::vector<gman::Emitter> const& emitters, std::size
 // excluded.
 void testLightChoiceProbabilityTwoLights() {
   GMANPoint const p(0.0f, 0.0f, 0.0f);
-  GMANLinearWorldManager world;
+  GMANWorld world;
   GMANLight const pointLight(GMAN_LIGHT_POINT, GMANColor(1.0f, 1.0f, 1.0f), GMANPoint(0.0f, 0.0f, -1.0f), GMANVector());
   GMANLight const areaLight(GMAN_LIGHT_AREA, GMANColor(2.0f, 2.0f, 2.0f), GMANPoint(), GMANVector());
   GMANRaySphere* host = nullptr;
@@ -158,7 +158,7 @@ void testLightChoiceProbabilityTwoLights() {
 // it probability exactly 0, and the sole remaining light renormalizes to
 // probability 1.
 void testSelfExclusionZeroesOwnSurface() {
-  GMANLinearWorldManager world;
+  GMANWorld world;
   GMANLight const pointLight(GMAN_LIGHT_POINT, GMANColor(1.0f, 1.0f, 1.0f), GMANPoint(0.0f, 0.0f, -1.0f), GMANVector());
   GMANLight const areaLight(GMAN_LIGHT_AREA, GMANColor(2.0f, 2.0f, 2.0f), GMANPoint(), GMANVector());
   GMANRaySphere* host = nullptr;

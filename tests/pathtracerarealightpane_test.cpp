@@ -43,6 +43,7 @@
 #include "gmantransform.h"
 #include "gmanvector.h"
 #include "gmanvsperspective.h"
+#include "gmanworld.h"
 #include "pathtracerarealightscene.h"
 #include "pathtracerscene.h"
 #include "ri.h"
@@ -87,13 +88,14 @@ void testPaneBetweenSphereAndFloor() {
   gman::VSPerspective viewingSys(kFloorRes, kFloorRes, squareScreenWindow(), identity, 90.0f, 0.5f, 50.0f);
 
   GMANPathtraceRenderer renderer;
+  GMANWorld world;
   auto floor = buildFloor();
   gman::Appearance floorAppearance;
   floorAppearance.shader = loadShader("matte", matteParams(1.0f));
   floorAppearance.Cs = GMANColor(0.5f, 0.5f, 0.5f);
   floorAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   floor->setAppearance(floorAppearance);
-  renderer.getWorldManager()->add(std::move(floor));
+  world.add(std::move(floor));
 
   GMANMatrix4 place;
   place.trans(kSphereCentreX, kSphereCentreY, kSphereCentreZ);
@@ -106,7 +108,7 @@ void testPaneBetweenSphereAndFloor() {
   sphereAppearance.areaLight = &areaLight;
   sphereAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   sphere->setAppearance(sphereAppearance);
-  renderer.getWorldManager()->add(std::move(sphereOwner));
+  world.add(std::move(sphereOwner));
 
   auto paneOwner = buildPane();
   auto* const pane = paneOwner.get();
@@ -114,14 +116,14 @@ void testPaneBetweenSphereAndFloor() {
   paneAppearance.Cs = GMANColor(0.0f, 0.0f, 0.0f);
   paneAppearance.Os = GMANColor(kPaneOs, kPaneOs, kPaneOs);
   pane->setAppearance(paneAppearance);
-  renderer.getWorldManager()->add(std::move(paneOwner));
+  world.add(std::move(paneOwner));
 
   check(gman::primitiveMagnitude(pane->getBBox()) >= 4.0f * gman::primitiveMagnitude(sphere->getBBox()),
         "pane: primitiveMagnitude of its own bbox is at least 4x the emitter's");
 
   GMANFrameBuffer frameBuffer(kFloorRes, kFloorRes, options.getBackground());
   GMANAttributes const attr;
-  renderer.render(&frameBuffer, &viewingSys, options, attr);
+  renderer.render(world, &frameBuffer, &viewingSys, options, attr);
   check(renderer.droppedPathCount() == 0, "pane between sphere and floor: droppedPathCount() is 0");
 
   std::vector<double> residuals[3];

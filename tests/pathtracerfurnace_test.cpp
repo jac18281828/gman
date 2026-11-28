@@ -45,6 +45,7 @@
 #include "gmanraysphere.h"
 #include "gmanvector.h"
 #include "gmanvsperspective.h"
+#include "gmanworld.h"
 #include "pathtracerscene.h"
 #include "ri.h"
 #include "samplingstats.h"
@@ -72,6 +73,8 @@ void renderFurnace(RtInt samples, std::vector<double> outChannels[3], std::size_
 
   GMANPathtraceRenderer renderer;
 
+  GMANWorld world;
+
   auto sphere = gman::make<GMANRaySphere>(kSphereRadius, -kSphereRadius, kSphereRadius, 360.0f, GMANParameterList());
   GMANLight const light(GMAN_LIGHT_POINT, GMANColor(kIntensity, kIntensity, kIntensity), GMANPoint(0.0f, 0.0f, 0.0f),
                         GMANVector());
@@ -81,11 +84,11 @@ void renderFurnace(RtInt samples, std::vector<double> outChannels[3], std::size_
   appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   appearance.lights = {&light};
   sphere->setAppearance(appearance);
-  renderer.getWorldManager()->add(std::move(sphere));
+  world.add(std::move(sphere));
 
   GMANFrameBuffer frameBuffer(kRes, kRes, options.getBackground());
   GMANAttributes const attr;
-  renderer.render(&frameBuffer, &viewingSys, options, attr);
+  renderer.render(world, &frameBuffer, &viewingSys, options, attr);
 
   for (int y = 0; y < kRes; ++y) {
     for (int x = 0; x < kRes; ++x) {

@@ -31,7 +31,7 @@
 #include "gmanray.h"
 #include "gmanrayoccluder.h"
 #include "gmanvector.h"
-#include "gmanworldmanager.h"
+#include "gmanworld.h"
 
 /*
  * The ray tracer's indirect-light pass, over a GMANRadiosityMesh and one
@@ -64,7 +64,7 @@
  */
 class GMANRadiosityPass : public gman::IndirectPass {
 public:
-  void prepare(GMANWorldManager& world, GMANRayOccluder const& occluder, GMANOptions const& options) override;
+  void prepare(GMANWorld const& world, GMANRayOccluder const& occluder, GMANOptions const& options) override;
   GMANColor irradiance(GMANHit const& hit, GMANVector const& I) const override;
 
 private:

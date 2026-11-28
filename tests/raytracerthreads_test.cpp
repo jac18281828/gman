@@ -79,6 +79,7 @@
 #include "gmantransform.h"
 #include "gmanvector.h"
 #include "gmanvsperspective.h"
+#include "gmanworld.h"
 #include "maketransform.h"
 #include "ri.h"
 
@@ -284,6 +285,7 @@ struct TracedScene {
   gman::VSPerspective viewingSys;
   GMANFrameBuffer frameBuffer;
   GMANRaytraceRenderer renderer;
+  GMANWorld world;
 
   TracedScene(FrameSize const& size, RtFloat pixelSamples, RtFloat fov, RtFloat nearClip, RtFloat farClip,
               GMANPoint const& lightPosition, RtFloat intensity)
@@ -308,7 +310,7 @@ struct TracedScene {
     auto polygon =
         gman::make<GMANRayPolygon>(std::vector<GMANPoint>(corners.begin(), corners.end()), GMANParameterList());
     polygon->setAppearance(look);
-    renderer.getWorldManager()->add(std::move(polygon));
+    world.add(std::move(polygon));
   }
 
   void addSphere(GMANPoint const& centre, RtFloat radius, gman::Appearance const& look) {
@@ -317,13 +319,13 @@ struct TracedScene {
     GMANTransform const transform = makeTransform(place);
     auto sphere = gman::make<GMANRaySphere>(radius, -radius, radius, 360.0f, GMANParameterList(), transform);
     sphere->setAppearance(look);
-    renderer.getWorldManager()->add(std::move(sphere));
+    world.add(std::move(sphere));
   }
 
   void render(RtInt workers) {
     renderer.setWorkers(workers);
     GMANAttributes const attributes;
-    renderer.render(&frameBuffer, &viewingSys, options, attributes);
+    renderer.render(world, &frameBuffer, &viewingSys, options, attributes);
   }
 };
 
@@ -408,7 +410,7 @@ struct EmitterScene : TracedScene {
       look.areaLight = &emitted;
     }
     disk->setAppearance(look);
-    renderer.getWorldManager()->add(std::move(disk));
+    world.add(std::move(disk));
   }
 };
 

@@ -110,15 +110,15 @@ class.  The C interface is built out of the C++ Interface by providing a
 C wrapper that instantiates a single instance of \text{
 GMANRenderManImpl, } the RenderMan implementation class.
 
-\subsection{Object Management}
-\gman stores all objects defined with a \text{ RiWorldBegin,
-RiWorldEnd } pair in an object database called an \text
-{ ObjectManager. }  The object manager base class is defined in \text
-{ gmanobjectmanager.h. }  One is implemented, the linear world manager;
-the BSP and octree managers were designed and never written.  The
-\text{ ObjectManager } interface provides a generalized method for
-accessing all objects in a World, i.e., all objects to be projected
-into the output view by the shader.
+\subsection{The World}
+\gman stores every primitive defined between a \text{ RiWorldBegin,
+RiWorldEnd } pair, in the order declared, in a \text{ GMANWorld, }
+defined in \text{ gmanworld.h. }  The world belongs to the RenderMan
+implementation, and the renderer receives it as a \text{ GMANWorld
+const\& } to read.  A renderer walks it with standard C++ iteration, a
+range-based \text{ for } over the world, and \text{ world.ofType<T>() }
+yields only the primitives that are a \text{ T. }  Any number of walks
+may run at once, since an iterator holds no state in the world.
 
 \subsection{Shaders}
 \gman also provides a generalized interface to shading algorithms.

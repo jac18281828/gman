@@ -46,7 +46,7 @@
 #include "gmanshading.h"
 #include "gmantransform.h"
 #include "gmantypes.h"
-#include "gmanworldmanager.h"
+#include "gmanworld.h"
 #include "gmanzbufferrenderer.h"
 #include "ri.h"
 
@@ -534,12 +534,12 @@ void GMANZBufferRenderer::drawEdgeList(void) {
   }
 }
 
-RtVoid GMANZBufferRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSystem* viewingSys,
+RtVoid GMANZBufferRenderer::render(GMANWorld const& world, GMANFrameBuffer* frameBuffer, GMANViewingSystem* viewingSys,
                                    const GMANOptions& options, const GMANAttributes& /*attributes*/) {
 
-  GMANFace* face;
-  GMANSurface* surf;
-  GMANBody* body;
+  GMANFace const* face;
+  GMANSurface const* surf;
+  GMANBody const* body;
   GMANOutputPolygon outPoly;
 
   width = frameBuffer->getWidth();
@@ -577,12 +577,8 @@ RtVoid GMANZBufferRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSyst
   debug("GMANZBufferRenderer::render");
 
   // render each object
-  GMANPrimitive* primitive = worldManager.getFirst();
-  while (primitive) {
-
-    GMANObject* object = dynamic_cast<GMANObject*>(primitive);
-
-    body = object->getBody();
+  for (auto const& object : world.ofType<GMANObject>()) {
+    body = object.getBody();
     while (body) {
       surf = body->getSurface();
       while (surf) {
@@ -610,7 +606,6 @@ RtVoid GMANZBufferRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSyst
       }
       body = body->getNext();
     }
-    primitive = worldManager.getNext();
   }
 
   // Resolve() also computes, per pixel, the minimum depth among that
@@ -629,9 +624,6 @@ RtVoid GMANZBufferRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSyst
 
   gman::warnAreaLightPrimitivesIgnored("gmanzbuffer", primitiveFactory.areaLightCount);
 }
-
-// world manager
-GMANWorldManager* GMANZBufferRenderer::getWorldManager(void) { return &worldManager; }
 
 // return its object manager
 GMANPrimitiveFactory* GMANZBufferRenderer::getPrimitiveFactory(void) { return &primitiveFactory; }

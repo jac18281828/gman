@@ -39,7 +39,6 @@
 #include "gmancolor.h"
 #include "gmanerror.h"
 #include "gmanlightsourcemgr.h"
-#include "gmanlinearworldmanager.h"
 #include "gmanlog.h"
 #include "gmanmath.h"
 #include "gmanmatrix4.h"
@@ -63,6 +62,7 @@
 #include "gmanshading.h"
 #include "gmansurfaceshader.h"
 #include "gmanvector.h"
+#include "gmanworld.h"
 #include "maketransform.h"
 #include "ri.h"
 
@@ -252,7 +252,7 @@ GMANLight makePointLight(GMANPoint const& position, RtFloat intensity) {
 // the wall (Y > 0). ----
 
 struct MainFixture {
-  GMANLinearWorldManager world;
+  GMANWorld world;
   GMANRayBVH bvh;
   GMANRayOccluder occluder;
   GMANRayPolygon* floor = nullptr;
@@ -380,7 +380,7 @@ struct Reference {
   TierCounts tiers;
 };
 
-Reference buildReference(GMANWorldManager& world, GMANRayOccluder const& occluder, RtFloat elementSize) {
+Reference buildReference(GMANWorld const& world, GMANRayOccluder const& occluder, RtFloat elementSize) {
   Reference ref;
   ref.mesh.build(world, elementSize);
   std::vector<GMANColor> const reflectance = referenceReflectance(ref.mesh, ref.tiers);
@@ -591,31 +591,27 @@ void testDefaultSizeMatchesReference(MainFixture& fixture) {
   {
     bool any = false;
     GMANPoint boxMin, boxMax;
-    for (GMANPrimitive* p = fixture.world.getFirst(); p != nullptr;) {
-      auto const* rp = dynamic_cast<GMANRayPrimitive const*>(p);
-      if (rp != nullptr) {
-        GMANPoint const lo = rp->getBBox().getMin();
-        GMANPoint const hi = rp->getBBox().getMax();
-        RtFloat const coords[6] = {lo.getX(), lo.getY(), lo.getZ(), hi.getX(), hi.getY(), hi.getZ()};
-        bool finite = true;
-        for (RtFloat const c : coords) {
-          if (std::fabs(c) >= RI_INFINITY) {
-            finite = false;
-            break;
-          }
-        }
-        if (finite) {
-          if (!any) {
-            boxMin = lo;
-            boxMax = hi;
-            any = true;
-          } else {
-            boxMin = gman::pointMin(boxMin, lo);
-            boxMax = gman::pointMax(boxMax, hi);
-          }
+    for (auto const& rp : fixture.world.ofType<GMANRayPrimitive>()) {
+      GMANPoint const lo = rp.getBBox().getMin();
+      GMANPoint const hi = rp.getBBox().getMax();
+      RtFloat const coords[6] = {lo.getX(), lo.getY(), lo.getZ(), hi.getX(), hi.getY(), hi.getZ()};
+      bool finite = true;
+      for (RtFloat const c : coords) {
+        if (std::fabs(c) >= RI_INFINITY) {
+          finite = false;
+          break;
         }
       }
-      p = fixture.world.getNext();
+      if (finite) {
+        if (!any) {
+          boxMin = lo;
+          boxMax = hi;
+          any = true;
+        } else {
+          boxMin = gman::pointMin(boxMin, lo);
+          boxMax = gman::pointMax(boxMax, hi);
+        }
+      }
     }
     if (any) {
       RtFloat const dx = boxMax.getX() - boxMin.getX();
@@ -658,9 +654,9 @@ void testPrimitiveOutsideWorldIsBlack(GMANRadiosityPass const& pass) {
 
 // ---- check 6: prepare() changes nothing ----
 void testPrepareChangesNothing(MainFixture& fixture) {
-  std::vector<GMANPrimitive*> before;
-  for (GMANPrimitive* p = fixture.world.getFirst(); p != nullptr; p = fixture.world.getNext()) {
-    before.push_back(p);
+  std::vector<GMANPrimitive const*> before;
+  for (GMANPrimitive const& p : fixture.world) {
+    before.push_back(&p);
   }
 
   auto const* floorRay = dynamic_cast<GMANRayPrimitive const*>(fixture.floor);
@@ -675,12 +671,12 @@ void testPrepareChangesNothing(MainFixture& fixture) {
   options.setRadiosityElementSize(kSizeUnderTest);
   pass.prepare(fixture.world, fixture.occluder, options);
 
-  std::vector<GMANPrimitive*> after;
-  for (GMANPrimitive* p = fixture.world.getFirst(); p != nullptr; p = fixture.world.getNext()) {
-    after.push_back(p);
+  std::vector<GMANPrimitive const*> after;
+  for (GMANPrimitive const& p : fixture.world) {
+    after.push_back(&p);
   }
 
-  check(before == after, "prepare unchanged: getFirst/getNext yields the same primitives in the same order");
+  check(before == after, "prepare unchanged: a walk of the world yields the same primitives in the same order");
   check(appearanceUnchanged(floorBefore, floorRay->getAppearance()),
         "prepare unchanged: the floor's appearance is intact");
   check(appearanceUnchanged(wallBefore, wallRay->getAppearance()),
@@ -723,7 +719,7 @@ void testLoneSphereAnswersExactlyBlack() {
   ConstantAlbedoShader const shader(0.5f);
   GMANLight const light = makePointLight(GMANPoint(0.0f, 0.0f, -6.0f), 20.0);
 
-  GMANLinearWorldManager world;
+  GMANWorld world;
   auto sphere = gman::make<GMANRaySphere>(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList(), identityTransform());
   gman::Appearance appearance;
   appearance.shader = asAppearanceShader(shader);
@@ -893,7 +889,7 @@ void testCapWarnings(MainFixture& fixture) {
 
   // World A: two thin, long polygons -- the polygon cap path alone.
   {
-    GMANLinearWorldManager world;
+    GMANWorld world;
     ConstantAlbedoShader const shader(0.5f);
     for (RtFloat zOffset : {0.0f, 1.0f}) {
       std::vector<GMANPoint> const verts = {
@@ -928,7 +924,7 @@ void testCapWarnings(MainFixture& fixture) {
 
   // World B: one short, wide cylinder -- the quadric cap path alone.
   {
-    GMANLinearWorldManager world;
+    GMANWorld world;
     ConstantAlbedoShader const shader(0.5f);
     auto cylinder = gman::make<GMANRayCylinder>(kWideCylinderRadius, 0.0f, kWideCylinderHeight, 360.0f,
                                                 GMANParameterList(), identityTransform());

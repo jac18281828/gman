@@ -35,6 +35,7 @@
 #include "gmanraysphere.h"
 #include "gmantransform.h"
 #include "gmanvsperspective.h"
+#include "gmanworld.h"
 #include "maketransform.h"
 #include "pathtracerscene.h"
 #include "ri.h"
@@ -42,12 +43,12 @@
 // An emitting sphere or disk's own radiance in a pathtracer area-light test.
 inline constexpr RtFloat kAreaLe = 10.0f;
 
-// A rigidly placed emitting sphere, added to renderer's world, opaque (Os
+// A rigidly placed emitting sphere, added to world, opaque (Os
 // 1, the RIB default, so a shadow ray that walked all the way to the
 // sampled point would graze the emitter's own surface there). areaLight is
 // the caller's own, outliving renderer.render()'s own call.
-inline GMANRaySphere* addEmittingSphere(GMANPathtraceRenderer& renderer, GMANLight const& areaLight, RtFloat radius,
-                                        RtFloat centreX, RtFloat centreY, RtFloat centreZ) {
+inline GMANRaySphere* addEmittingSphere(GMANWorld& world, GMANLight const& areaLight, RtFloat radius, RtFloat centreX,
+                                        RtFloat centreY, RtFloat centreZ) {
   GMANMatrix4 place;
   place.trans(centreX, centreY, centreZ);
   GMANTransform const transform = makeTransform(place);
@@ -57,7 +58,7 @@ inline GMANRaySphere* addEmittingSphere(GMANPathtraceRenderer& renderer, GMANLig
   appearance.areaLight = &areaLight;
   appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   sphere->setAppearance(appearance);
-  renderer.getWorldManager()->add(std::move(sphereOwner));
+  world.add(std::move(sphereOwner));
   return sphere;
 }
 

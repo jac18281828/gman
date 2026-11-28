@@ -19,7 +19,7 @@
  */
 
 /*
- * A world owns the primitives it is given. A GMANLinearWorldManager destroys
+ * A world owns the primitives it is given. A GMANWorld destroys
  * each primitive added to it when the world itself goes, and an empty
  * gman::Owned adds nothing. Each factory returns an empty owner for a mesh
  * with no face, and a request that yields no geometry adds nothing to the
@@ -42,7 +42,6 @@
 #include "gmancolor.h"
 #include "gmandictionary.h"
 #include "gmanlightsourcemgr.h"
-#include "gmanlinearworldmanager.h"
 #include "gmanlog.h"
 #include "gmanoptions.h"
 #include "gmanowned.h"
@@ -55,7 +54,7 @@
 #include "gmanrendermanimpl.h"
 #include "gmantransform.h"
 #include "gmanvector.h"
-#include "gmanworldmanager.h"
+#include "gmanworld.h"
 #include "ri.h"
 
 namespace {
@@ -70,10 +69,10 @@ public:
   ~CountedPrimitive() override { --liveCount; }
 };
 
-std::vector<GMANPrimitive const*> walk(GMANWorldManager& world) {
+std::vector<GMANPrimitive const*> walk(GMANWorld const& world) {
   std::vector<GMANPrimitive const*> walked;
-  for (GMANPrimitive const* primitive = world.getFirst(); primitive != nullptr; primitive = world.getNext()) {
-    walked.push_back(primitive);
+  for (GMANPrimitive const& primitive : world) {
+    walked.push_back(&primitive);
   }
   return walked;
 }
@@ -83,7 +82,7 @@ void testWorldDestroysWhatItOwns() {
   std::vector<GMANPrimitive const*> walked;
   int liveWithinScope = 0;
   {
-    GMANLinearWorldManager world;
+    GMANWorld world;
     for (int i = 0; i < 3; ++i) {
       auto primitive = gman::make<CountedPrimitive>();
       expected.push_back(primitive.get());
@@ -98,7 +97,7 @@ void testWorldDestroysWhatItOwns() {
 }
 
 void testEmptyOwnerAddsNothing() {
-  GMANLinearWorldManager world;
+  GMANWorld world;
   world.add(gman::Owned<GMANPrimitive>());
   auto primitive = gman::make<CountedPrimitive>();
   auto const* const added = static_cast<GMANPrimitive const*>(primitive.get());
@@ -133,10 +132,14 @@ void testFactoriesReturnEmptyOwnerForNoFace() {
   check(rayPrimitive == nullptr, "the ray factory returns an empty owner for a mesh with no face");
   check(rasterPrimitive == nullptr, "the raster factory returns an empty owner for a mesh with no face");
 
-  GMANLinearWorldManager world;
+  GMANWorld world;
   world.add(std::move(rayPrimitive));
   world.add(std::move(rasterPrimitive));
-  check(world.getFirst() == nullptr, "a world handed each empty owner holds nothing");
+  auto counted = gman::make<CountedPrimitive>();
+  auto const* const added = static_cast<GMANPrimitive const*>(counted.get());
+  world.add(std::move(counted));
+  check(walk(world) == std::vector<GMANPrimitive const*>{added},
+        "a world handed each empty owner holds only the primitive added after them");
 }
 
 std::string readFile(std::string const& path) {

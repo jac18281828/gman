@@ -34,7 +34,6 @@
 #include "gmancolor.h"
 #include "gmanemitter.h"
 #include "gmanlightsourcemgr.h"
-#include "gmanlinearworldmanager.h"
 #include "gmanmatrix4.h"
 #include "gmanoptions.h"
 #include "gmanpoint.h"
@@ -50,7 +49,7 @@
 #include "gmantrace.h"
 #include "gmanvector.h"
 #include "gmanviewingsystem.h"
-#include "gmanworldmanager.h"
+#include "gmanworld.h"
 #include "ri.h"
 
 namespace gman {
@@ -202,12 +201,9 @@ class GMAN_EXPORT GMANRaytraceRenderer : public GMANRenderer {
 private:
   GMANRayPrimitiveFactory primitiveFactory;
 
-  GMANLinearWorldManager worldManager;
-
-  // Rebuilt from worldManager at the top of every render() call (see
-  // render()'s own comment); declared after worldManager and before
-  // occluder so occluder's reference binds to an already-constructed
-  // object.
+  // Rebuilt from the world render() borrows, at the top of every render()
+  // call (see render()'s own comment); declared before occluder so
+  // occluder's reference binds to an already-constructed object.
   GMANRayBVH bvh;
 
   // The bvh-only occluder: loadAndPrepareIndirectPass hands it to the
@@ -278,7 +274,7 @@ public:
   RtVoid solar(RtInt /*i*/, GMANVector const& /*axis*/, RtFloat /*angle*/) {}
 
   /*
-   * Apply a ray-tracing environment to the objects in object manager
+   * Apply a ray-tracing environment to the objects in world
    * to generate a frameBuffer output. Pixel rows render through
    * gman::parallelFor, one gman::TextureCache and one shading
    * GMANRayOccluder per worker; every sample's
@@ -294,8 +290,8 @@ public:
    * its delta lights alone. An emitter gman::emitters skips as ineligible or
    * unsupported is warned about once.
    */
-  virtual void render(GMANFrameBuffer* frameBuffer, GMANViewingSystem* viewingSys, const GMANOptions& options,
-                      const GMANAttributes& attributes);
+  virtual void render(GMANWorld const& world, GMANFrameBuffer* frameBuffer, GMANViewingSystem* viewingSys,
+                      const GMANOptions& options, const GMANAttributes& attributes);
 
   // The worker count render() requests from gman::parallelFor; 0, the
   // default, lets it choose the hardware's concurrency. Takes effect on the
@@ -311,9 +307,6 @@ public:
   // hit -- the sample buffer's own uncovered value. Unlike the z-buffer's
   // getDepth, this is not post-projection z.
   RtFloat getDepth(int x, int y) const { return sampleBuffer ? sampleBuffer->getResolvedDepth(x, y) : RI_INFINITY; }
-
-  // return its world manager
-  virtual GMANWorldManager* getWorldManager(void);
 
   // return its object manager
   virtual GMANPrimitiveFactory* getPrimitiveFactory(void);

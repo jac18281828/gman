@@ -33,13 +33,13 @@
 #include <vector>
 
 #include "check.h"
-#include "gmanlinearworldmanager.h"
 #include "gmanowned.h"
 #include "gmanparameterlist.h"
 #include "gmanpoint.h"
 #include "gmanradiositymesh.h"
 #include "gmanray.h"
 #include "gmanraypolygon.h"
+#include "gmanworld.h"
 #include "ri.h"
 
 namespace {
@@ -50,7 +50,7 @@ std::vector<GMANPoint> square(RtFloat half) {
 }
 
 void testQuotientBeyondFloatRange() {
-  GMANLinearWorldManager world;
+  GMANWorld world;
   world.add(gman::make<GMANRayPolygon>(square(4.0f), GMANParameterList()));
   GMANRadiosityMesh mesh;
   mesh.build(world, std::numeric_limits<RtFloat>::min());
@@ -59,7 +59,7 @@ void testQuotientBeyondFloatRange() {
 }
 
 void testHugeExtentOverTinyEdge() {
-  GMANLinearWorldManager world;
+  GMANWorld world;
   world.add(gman::make<GMANRayPolygon>(square(1e5f), GMANParameterList()));
   GMANRadiosityMesh mesh;
   mesh.build(world, 1e-34f);
@@ -68,7 +68,7 @@ void testHugeExtentOverTinyEdge() {
 }
 
 void testOrdinaryDivisionIsUnchanged() {
-  GMANLinearWorldManager world;
+  GMANWorld world;
   world.add(gman::make<GMANRayPolygon>(square(4.0f), GMANParameterList()));
   GMANRadiosityMesh mesh;
   mesh.build(world, 2.0f);
@@ -76,7 +76,7 @@ void testOrdinaryDivisionIsUnchanged() {
 }
 
 void testLocateFarBeyondThePolygon() {
-  GMANLinearWorldManager world;
+  GMANWorld world;
   auto polygonOwner = gman::make<GMANRayPolygon>(square(4.0f), GMANParameterList());
   auto* const polygon = polygonOwner.get();
   world.add(std::move(polygonOwner));

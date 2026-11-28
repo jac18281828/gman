@@ -34,7 +34,6 @@
 
 #include "check.h"
 #include "gmaninvertiblematrix.h"
-#include "gmanlinearworldmanager.h"
 #include "gmanmath.h"
 #include "gmanmatrix4.h"
 #include "gmanowned.h"
@@ -50,6 +49,7 @@
 #include "gmanraysphere.h"
 #include "gmanraytorus.h"
 #include "gmanvector.h"
+#include "gmanworld.h"
 #include "maketransform.h"
 
 namespace {
@@ -152,10 +152,10 @@ void testSphereArea() {
   RtFloat const maxEdgeLength = radius * 0.08f;
 
   {
-    GMANLinearWorldManager worldManager;
-    worldManager.add(gman::make<GMANRaySphere>(radius, -radius, radius, 360.0, GMANParameterList()));
+    GMANWorld world;
+    world.add(gman::make<GMANRaySphere>(radius, -radius, radius, 360.0, GMANParameterList()));
     GMANRadiosityMesh mesh;
-    mesh.build(worldManager, maxEdgeLength);
+    mesh.build(world, maxEdgeLength);
 
     RtFloat const analytic = (RtFloat)(4.0 * std::numbers::pi * radius * radius);
     RtFloat const diced = sumElementAreas(mesh);
@@ -169,10 +169,10 @@ void testSphereArea() {
   {
     // zmin, zmax and thetamax all restricting.
     RtFloat const zmin = -1.0f, zmax = 1.5f, thetamax = 270.0f;
-    GMANLinearWorldManager worldManager;
-    worldManager.add(gman::make<GMANRaySphere>(radius, zmin, zmax, thetamax, GMANParameterList()));
+    GMANWorld world;
+    world.add(gman::make<GMANRaySphere>(radius, zmin, zmax, thetamax, GMANParameterList()));
     GMANRadiosityMesh mesh;
-    mesh.build(worldManager, maxEdgeLength);
+    mesh.build(world, maxEdgeLength);
 
     // A sphere's own lateral zone area is 2*pi*r*(zmax - zmin) regardless
     // of where the band sits (Archimedes' hat-box theorem), times the
@@ -195,10 +195,10 @@ void testSphereArea() {
     s.scale(3.0, 3.0, 3.0);
     m.concat(s);
 
-    GMANLinearWorldManager worldManager;
-    worldManager.add(gman::make<GMANRaySphere>(1.0, -1.0, 1.0, 360.0, GMANParameterList(), makeTransform(m)));
+    GMANWorld world;
+    world.add(gman::make<GMANRaySphere>(1.0, -1.0, 1.0, 360.0, GMANParameterList(), makeTransform(m)));
     GMANRadiosityMesh mesh;
-    mesh.build(worldManager, 0.08f);
+    mesh.build(world, 0.08f);
 
     RtFloat const unitArea = (RtFloat)(4.0 * std::numbers::pi);
     RtFloat const diced = sumElementAreas(mesh);
@@ -217,13 +217,13 @@ void testSphereArea() {
     GMANMatrix4 singular;
     singular.scale(1.0, 1.0, 0.0);
 
-    GMANLinearWorldManager worldManager;
-    worldManager.add(gman::make<GMANRaySphere>(radius, -radius, radius, 360.0, GMANParameterList()));
-    worldManager.add(gman::make<GMANRaySphere>(1.0, -1.0, 1.0, 360.0, GMANParameterList(), makeTransform(singular)));
-    worldManager.add(gman::make<GMANPrimitive>());
+    GMANWorld world;
+    world.add(gman::make<GMANRaySphere>(radius, -radius, radius, 360.0, GMANParameterList()));
+    world.add(gman::make<GMANRaySphere>(1.0, -1.0, 1.0, 360.0, GMANParameterList(), makeTransform(singular)));
+    world.add(gman::make<GMANPrimitive>());
 
     GMANRadiosityMesh mesh;
-    mesh.build(worldManager, maxEdgeLength);
+    mesh.build(world, maxEdgeLength);
 
     check(mesh.getSkippedCount() == 2,
           "singular sphere + bare GMANPrimitive: skipped count is exactly the 2 undiceable primitives");
@@ -248,10 +248,10 @@ void testCylinderArea() {
   RtFloat const radius = 1.5f, zmin = -2.0f, zmax = 3.0f;
   RtFloat const maxEdgeLength = radius * 0.08f;
 
-  GMANLinearWorldManager worldManager;
-  worldManager.add(gman::make<GMANRayCylinder>(radius, zmin, zmax, 360.0, GMANParameterList()));
+  GMANWorld world;
+  world.add(gman::make<GMANRayCylinder>(radius, zmin, zmax, 360.0, GMANParameterList()));
   GMANRadiosityMesh mesh;
-  mesh.build(worldManager, maxEdgeLength);
+  mesh.build(world, maxEdgeLength);
 
   RtFloat const analytic = (RtFloat)(2.0 * std::numbers::pi * radius * (zmax - zmin));
   RtFloat const diced = sumElementAreas(mesh);
@@ -266,10 +266,10 @@ void testConeArea() {
   RtFloat const height = 3.0f, radius = 1.5f;
   RtFloat const maxEdgeLength = radius * 0.08f;
 
-  GMANLinearWorldManager worldManager;
-  worldManager.add(gman::make<GMANRayCone>(height, radius, 360.0, GMANParameterList()));
+  GMANWorld world;
+  world.add(gman::make<GMANRayCone>(height, radius, 360.0, GMANParameterList()));
   GMANRadiosityMesh mesh;
-  mesh.build(worldManager, maxEdgeLength);
+  mesh.build(world, maxEdgeLength);
 
   RtFloat const slant = (RtFloat)std::sqrt((double)(radius * radius + height * height));
   RtFloat const analytic = std::numbers::pi_v<RtFloat> * radius * slant;
@@ -285,10 +285,10 @@ void testDiskArea() {
   RtFloat const radius = 2.0f;
   RtFloat const maxEdgeLength = radius * 0.08f;
 
-  GMANLinearWorldManager worldManager;
-  worldManager.add(gman::make<GMANRayDisk>(1.0, radius, 360.0, GMANParameterList()));
+  GMANWorld world;
+  world.add(gman::make<GMANRayDisk>(1.0, radius, 360.0, GMANParameterList()));
   GMANRadiosityMesh mesh;
-  mesh.build(worldManager, maxEdgeLength);
+  mesh.build(world, maxEdgeLength);
 
   RtFloat const analytic = std::numbers::pi_v<RtFloat> * radius * radius;
   RtFloat const diced = sumElementAreas(mesh);
@@ -306,10 +306,10 @@ void testTorusArea() {
   // the cap while still well inside the 1% tolerance.
   RtFloat const maxEdgeLength = minorradius * 0.15f;
 
-  GMANLinearWorldManager worldManager;
-  worldManager.add(gman::make<GMANRayTorus>(majorradius, minorradius, -180.0, 180.0, 360.0, GMANParameterList()));
+  GMANWorld world;
+  world.add(gman::make<GMANRayTorus>(majorradius, minorradius, -180.0, 180.0, 360.0, GMANParameterList()));
   GMANRadiosityMesh mesh;
-  mesh.build(worldManager, maxEdgeLength);
+  mesh.build(world, maxEdgeLength);
 
   RtFloat const analytic = (RtFloat)(4.0 * std::numbers::pi * std::numbers::pi * majorradius * minorradius);
   RtFloat const diced = sumElementAreas(mesh);
@@ -326,20 +326,20 @@ void testTorusArea() {
 // maxEdgeLength must fall by at least kMinConvergenceRatio when it halves.
 template <class Factory>
 void checkConvergence(char const* name, Factory makePrimitive, RtFloat maxEdgeLength, RtFloat referenceMaxEdgeLength) {
-  GMANLinearWorldManager referenceWorld;
+  GMANWorld referenceWorld;
   referenceWorld.add(makePrimitive());
   GMANRadiosityMesh referenceMesh;
   referenceMesh.build(referenceWorld, referenceMaxEdgeLength);
   RtFloat const reference = sumElementAreas(referenceMesh);
 
-  GMANLinearWorldManager coarseWorld;
+  GMANWorld coarseWorld;
   coarseWorld.add(makePrimitive());
   GMANRadiosityMesh coarseMesh;
   coarseMesh.build(coarseWorld, maxEdgeLength);
   RtFloat const coarseArea = sumElementAreas(coarseMesh);
   RtFloat const coarseError = std::fabs(coarseArea - reference);
 
-  GMANLinearWorldManager fineWorld;
+  GMANWorld fineWorld;
   fineWorld.add(makePrimitive());
   GMANRadiosityMesh fineMesh;
   fineMesh.build(fineWorld, maxEdgeLength * 0.5f);
@@ -423,11 +423,11 @@ void testPolygonArea() {
     vertices.push_back(gman::transformPoint(m, p));
   }
 
-  GMANLinearWorldManager worldManager;
-  worldManager.add(gman::make<GMANRayPolygon>(vertices, GMANParameterList()));
+  GMANWorld world;
+  world.add(gman::make<GMANRayPolygon>(vertices, GMANParameterList()));
   GMANRadiosityMesh mesh;
   RtFloat const maxEdgeLength = 0.6f;
-  mesh.build(worldManager, maxEdgeLength);
+  mesh.build(world, maxEdgeLength);
 
   RtFloat const expected = (RtFloat)(referenceArea * (double)sx * (double)sy);
   RtFloat const diced = sumElementAreas(mesh);
@@ -473,7 +473,7 @@ GMANHit castAt(RayPrimitive& primitive, gman::InvertibleMatrix const& objectToCa
 
 // Parameterization agreement, round trip, weight validity and seams/edges
 // for one already-built, already-diced quadric. primitive is owned by the
-// caller's own world manager (already added there before mesh was built).
+// caller's own world (already added there before mesh was built).
 template <class RayPrimitive>
 void checkQuadricLookup(char const* name, RayPrimitive& primitive, GMANRadiosityMesh const& mesh, RtFloat scale,
                         RtFloat sagBound) {
@@ -567,52 +567,52 @@ RtFloat sphereSagBound(RtFloat maxEdgeLength, RtFloat radius) {
 void testSphereLookup() {
   RtFloat const radius = 2.0f;
   RtFloat const maxEdgeLength = radius * 0.06f;
-  GMANLinearWorldManager worldManager;
+  GMANWorld world;
   auto sphereOwner = gman::make<GMANRaySphere>(radius, -radius * 0.8f, radius * 0.8f, 300.0, GMANParameterList(),
                                                makeTransform(uniformPlacement(1.0f)));
   auto* const sphere = sphereOwner.get();
-  worldManager.add(std::move(sphereOwner));
+  world.add(std::move(sphereOwner));
   GMANRadiosityMesh mesh;
-  mesh.build(worldManager, maxEdgeLength);
+  mesh.build(world, maxEdgeLength);
   checkQuadricLookup("sphere", *sphere, mesh, radius, sphereSagBound(maxEdgeLength, radius));
 }
 
 void testCylinderLookup() {
   RtFloat const radius = 1.5f;
   RtFloat const maxEdgeLength = radius * 0.06f;
-  GMANLinearWorldManager worldManager;
+  GMANWorld world;
   auto cylinderOwner =
       gman::make<GMANRayCylinder>(radius, -1.5, 2.0, 300.0, GMANParameterList(), makeTransform(uniformPlacement(1.0f)));
   auto* const cylinder = cylinderOwner.get();
-  worldManager.add(std::move(cylinderOwner));
+  world.add(std::move(cylinderOwner));
   GMANRadiosityMesh mesh;
-  mesh.build(worldManager, maxEdgeLength);
+  mesh.build(world, maxEdgeLength);
   checkQuadricLookup("cylinder", *cylinder, mesh, radius, sphereSagBound(maxEdgeLength, radius));
 }
 
 void testConeLookup() {
   RtFloat const radius = 1.5f;
   RtFloat const maxEdgeLength = radius * 0.06f;
-  GMANLinearWorldManager worldManager;
+  GMANWorld world;
   auto coneOwner =
       gman::make<GMANRayCone>(3.0, radius, 300.0, GMANParameterList(), makeTransform(uniformPlacement(1.0f)));
   auto* const cone = coneOwner.get();
-  worldManager.add(std::move(coneOwner));
+  world.add(std::move(coneOwner));
   GMANRadiosityMesh mesh;
-  mesh.build(worldManager, maxEdgeLength);
+  mesh.build(world, maxEdgeLength);
   checkQuadricLookup("cone", *cone, mesh, radius, sphereSagBound(maxEdgeLength, radius));
 }
 
 void testDiskLookup() {
   RtFloat const radius = 2.0f;
   RtFloat const maxEdgeLength = radius * 0.06f;
-  GMANLinearWorldManager worldManager;
+  GMANWorld world;
   auto diskOwner =
       gman::make<GMANRayDisk>(1.0, radius, 300.0, GMANParameterList(), makeTransform(uniformPlacement(1.0f)));
   auto* const disk = diskOwner.get();
-  worldManager.add(std::move(diskOwner));
+  world.add(std::move(diskOwner));
   GMANRadiosityMesh mesh;
-  mesh.build(worldManager, maxEdgeLength);
+  mesh.build(world, maxEdgeLength);
   // A disk's own surface is flat, but its (theta, radius) grid is still
   // curved within that plane: a constant-radius edge is an arc, so a
   // bilinear cell still sags off it by the same chord-vs-arc formula as
@@ -623,26 +623,26 @@ void testDiskLookup() {
 void testTorusLookup() {
   RtFloat const majorradius = 3.0f, minorradius = 1.0f;
   RtFloat const maxEdgeLength = minorradius * 0.06f;
-  GMANLinearWorldManager worldManager;
+  GMANWorld world;
   auto torusOwner = gman::make<GMANRayTorus>(majorradius, minorradius, -150.0, 150.0, 300.0, GMANParameterList(),
                                              makeTransform(uniformPlacement(1.0f)));
   auto* const torus = torusOwner.get();
-  worldManager.add(std::move(torusOwner));
+  world.add(std::move(torusOwner));
   GMANRadiosityMesh mesh;
-  mesh.build(worldManager, maxEdgeLength);
+  mesh.build(world, maxEdgeLength);
   checkQuadricLookup("torus", *torus, mesh, minorradius, sphereSagBound(maxEdgeLength, minorradius));
 }
 
 void testParaboloidLookup() {
   RtFloat const rmax = 2.0f;
   RtFloat const maxEdgeLength = rmax * 0.06f;
-  GMANLinearWorldManager worldManager;
+  GMANWorld world;
   auto paraboloidOwner =
       gman::make<GMANRayParaboloid>(rmax, 0.3, 3.0, 300.0, GMANParameterList(), makeTransform(uniformPlacement(1.0f)));
   auto* const paraboloid = paraboloidOwner.get();
-  worldManager.add(std::move(paraboloidOwner));
+  world.add(std::move(paraboloidOwner));
   GMANRadiosityMesh mesh;
-  mesh.build(worldManager, maxEdgeLength);
+  mesh.build(world, maxEdgeLength);
   checkQuadricLookup("paraboloid", *paraboloid, mesh, rmax, sphereSagBound(maxEdgeLength, rmax));
 }
 
@@ -651,13 +651,13 @@ void testHyperboloidLookup() {
   RtPoint point2 = {2.0, 0.0, 2.0};
   RtFloat const scale = 2.0f;
   RtFloat const maxEdgeLength = scale * 0.06f;
-  GMANLinearWorldManager worldManager;
+  GMANWorld world;
   auto hyperboloidOwner =
       gman::make<GMANRayHyperboloid>(point1, point2, 300.0, GMANParameterList(), makeTransform(uniformPlacement(1.0f)));
   auto* const hyperboloid = hyperboloidOwner.get();
-  worldManager.add(std::move(hyperboloidOwner));
+  world.add(std::move(hyperboloidOwner));
   GMANRadiosityMesh mesh;
-  mesh.build(worldManager, maxEdgeLength);
+  mesh.build(world, maxEdgeLength);
   checkQuadricLookup("hyperboloid", *hyperboloid, mesh, scale, sphereSagBound(maxEdgeLength, scale));
 }
 
@@ -677,12 +677,12 @@ void testPolygonLookup() {
     vertices.push_back(gman::transformPoint(placement, p));
   }
 
-  GMANLinearWorldManager worldManager;
+  GMANWorld world;
   auto polygonOwner = gman::make<GMANRayPolygon>(vertices, GMANParameterList());
   auto* const polygon = polygonOwner.get();
-  worldManager.add(std::move(polygonOwner));
+  world.add(std::move(polygonOwner));
   GMANRadiosityMesh mesh;
-  mesh.build(worldManager, 0.5f);
+  mesh.build(world, 0.5f);
 
   // A grid of interior points in the polygon's own vertex space,
   // barycentric-blended from its first three vertices (fan origin),
@@ -745,13 +745,13 @@ void testPolygonEdgesAndVertices() {
     vertices.push_back(gman::transformPoint(placement, p));
   }
 
-  GMANLinearWorldManager worldManager;
+  GMANWorld world;
   auto polygonOwner = gman::make<GMANRayPolygon>(vertices, GMANParameterList());
   auto* const polygon = polygonOwner.get();
-  worldManager.add(std::move(polygonOwner));
+  world.add(std::move(polygonOwner));
   GMANRadiosityMesh mesh;
   RtFloat const maxEdgeLength = 0.6f;
-  mesh.build(worldManager, maxEdgeLength);
+  mesh.build(world, maxEdgeLength);
 
   std::vector<GMANPoint> samples(vertices);
   for (std::size_t i = 0; i < vertices.size(); ++i) {
@@ -798,12 +798,12 @@ void testPolygonEdgesAndVertices() {
 // u = 1) return an element.
 void testSpherePoleSeam() {
   RtFloat const radius = 1.5f;
-  GMANLinearWorldManager worldManager;
+  GMANWorld world;
   auto sphereOwner = gman::make<GMANRaySphere>(radius, -radius, radius, 360.0, GMANParameterList());
   auto* const sphere = sphereOwner.get();
-  worldManager.add(std::move(sphereOwner));
+  world.add(std::move(sphereOwner));
   GMANRadiosityMesh mesh;
-  mesh.build(worldManager, radius * 0.1f);
+  mesh.build(world, radius * 0.1f);
 
   gman::InvertibleMatrix const identity;
   // A hair inside [0, 1]: see checkQuadricLookup's own comment on
@@ -838,12 +838,12 @@ void testNonUniformScaleNormal() {
   s.scale(5.0, 1.0, 1.0);
   m.concat(s);
 
-  GMANLinearWorldManager worldManager;
+  GMANWorld world;
   auto sphereOwner = gman::make<GMANRaySphere>(radius, -radius, radius, 360.0, GMANParameterList(), makeTransform(m));
   auto* const sphere = sphereOwner.get();
-  worldManager.add(std::move(sphereOwner));
+  world.add(std::move(sphereOwner));
   GMANRadiosityMesh mesh;
-  mesh.build(worldManager, radius * 0.05f);
+  mesh.build(world, radius * 0.05f);
 
   std::optional<gman::InvertibleMatrix> const& placement = sphere->getObjectToCamera();
   check(placement.has_value(), "non-uniform scale: the placement inverts");

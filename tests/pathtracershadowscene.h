@@ -44,6 +44,7 @@
 #include "gmanraypolygon.h"
 #include "gmanvector.h"
 #include "gmanvsperspective.h"
+#include "gmanworld.h"
 #include "pathtracerscene.h"
 #include "ri.h"
 
@@ -120,6 +121,7 @@ inline void renderScene(std::vector<gman::Appearance> const& blockerAppearances,
                         GMANVector(0.0f, -1.0f, 0.0f));
 
   GMANPathtraceRenderer renderer;
+  GMANWorld world;
   auto floor = buildFloor();
   gman::Appearance floorAppearance;
   floorAppearance.shader = loadShader("matte", matteParams(1.0f));
@@ -127,18 +129,18 @@ inline void renderScene(std::vector<gman::Appearance> const& blockerAppearances,
   floorAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   floorAppearance.lights = {&light};
   floor->setAppearance(floorAppearance);
-  renderer.getWorldManager()->add(std::move(floor));
+  world.add(std::move(floor));
 
   for (std::size_t i = 0; i < blockerVerts.size(); ++i) {
     auto blocker = gman::make<GMANRayPolygon>(blockerVerts[i], GMANParameterList());
     gman::Appearance appearance = blockerAppearances[i];
     appearance.lights = {&light};
     blocker->setAppearance(appearance);
-    renderer.getWorldManager()->add(std::move(blocker));
+    world.add(std::move(blocker));
   }
 
   frameBufferOut.reset(new GMANFrameBuffer(kRes, kRes, options.getBackground()));
   GMANAttributes const attr;
-  renderer.render(frameBufferOut.get(), viewingSysOut.get(), options, attr);
+  renderer.render(world, frameBufferOut.get(), viewingSysOut.get(), options, attr);
   droppedOut = renderer.droppedPathCount();
 }

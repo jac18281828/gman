@@ -34,7 +34,6 @@
 #include "check.h"
 #include "gmancolor.h"
 #include "gmanlightsourcemgr.h"
-#include "gmanlinearworldmanager.h"
 #include "gmanmatrix4.h"
 #include "gmanowned.h"
 #include "gmanparameterlist.h"
@@ -49,6 +48,7 @@
 #include "gmanshading.h"
 #include "gmansurfaceshader.h"
 #include "gmanvector.h"
+#include "gmanworld.h"
 #include "maketransform.h"
 #include "ri.h"
 
@@ -151,7 +151,7 @@ public:
 
 // ---- check 1: hitSurfacePoint's field mapping off a real BVH hit ----
 void testHitSurfacePointFieldMapping() {
-  GMANLinearWorldManager world;
+  GMANWorld world;
   world.add(gman::make<GMANRaySphere>(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList(), identityTransform()));
   GMANRayBVH bvh;
   bvh.build(world);
@@ -204,7 +204,7 @@ void testParityOnSphere() {
   appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   appearance.lights = {&light};
 
-  GMANLinearWorldManager world;
+  GMANWorld world;
   world.add(gman::make<GMANRaySphere>(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList(), identityTransform()));
   GMANRayBVH bvh;
   bvh.build(world);
@@ -253,7 +253,7 @@ void testParityOnTexturedPolygon() {
   appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   appearance.lights = {&light};
 
-  GMANLinearWorldManager world;
+  GMANWorld world;
   world.add(squareWithSt());
   GMANRayBVH bvh;
   bvh.build(world);

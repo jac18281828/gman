@@ -65,6 +65,7 @@
 #include "gmanraysphere.h"
 #include "gmantransform.h"
 #include "gmanvsperspective.h"
+#include "gmanworld.h"
 #include "maketransform.h"
 #include "pathtracerarealightscene.h"
 #include "pathtracerscene.h"
@@ -127,6 +128,8 @@ void renderAndCollectResiduals(std::vector<double> residuals[3], std::vector<dou
 
   GMANPathtraceRenderer renderer;
 
+  GMANWorld world;
+
   GMANMatrix4 place;
   place.trans(0.0f, 0.0f, kDiskZ);
   GMANTransform const transform = makeTransform(place);
@@ -145,11 +148,11 @@ void renderAndCollectResiduals(std::vector<double> residuals[3], std::vector<dou
   appearance.areaLight = &areaLight;
   appearance.lights = {&distantLight};
   disk->setAppearance(appearance);
-  renderer.getWorldManager()->add(std::move(diskOwner));
+  world.add(std::move(diskOwner));
 
   GMANFrameBuffer frameBuffer(kRes, kRes, options.getBackground());
   GMANAttributes const attr;
-  renderer.render(&frameBuffer, &viewingSys, options, attr);
+  renderer.render(world, &frameBuffer, &viewingSys, options, attr);
   droppedCount = renderer.droppedPathCount();
 
   // A delta light's own Cl already carries the *pi that a Lambert lobe's
@@ -224,6 +227,7 @@ PairRender renderDiskAndSphere(bool misEnabled) {
   gman::VSPerspective viewingSys(kPairRes, kPairRes, squareScreenWindow(), identity, kFov, 0.5f, 50.0f);
 
   GMANPathtraceRenderer renderer;
+  GMANWorld world;
   renderer.setMultipleImportanceSampling(misEnabled);
 
   GMANMatrix4 place;
@@ -240,12 +244,12 @@ PairRender renderDiskAndSphere(bool misEnabled) {
   appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   appearance.areaLight = &diskLight;
   disk->setAppearance(appearance);
-  renderer.getWorldManager()->add(std::move(diskOwner));
+  world.add(std::move(diskOwner));
 
   GMANLight const sphereLight(GMAN_LIGHT_AREA, GMANColor(kPairSphereLe, kPairSphereLe, kPairSphereLe), GMANPoint(),
                               GMANVector());
   GMANRaySphere* const sphere =
-      addEmittingSphere(renderer, sphereLight, kPairSphereRadius, kPairSphereX, kPairSphereY, kPairSphereZ);
+      addEmittingSphere(world, sphereLight, kPairSphereRadius, kPairSphereX, kPairSphereY, kPairSphereZ);
 
   PairRender result;
   for (int py = 0; py < kPairRes; ++py) {
@@ -266,7 +270,7 @@ PairRender renderDiskAndSphere(bool misEnabled) {
 
   result.frameBuffer = std::make_unique<GMANFrameBuffer>(kPairRes, kPairRes, options.getBackground());
   GMANAttributes const attr;
-  renderer.render(result.frameBuffer.get(), &viewingSys, options, attr);
+  renderer.render(world, result.frameBuffer.get(), &viewingSys, options, attr);
   result.droppedCount = renderer.droppedPathCount();
   return result;
 }

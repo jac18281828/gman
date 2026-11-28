@@ -33,7 +33,7 @@
 #include "gmanprimitivefactory.h"
 #include "gmanrenderer.h"
 #include "gmanviewingsystem.h"
-#include "gmanworldmanager.h"
+#include "gmanworld.h"
 #include "ri.h"
 
 /*
@@ -66,22 +66,20 @@ GMANLoadableRenderer::~GMANLoadableRenderer() {};
  * Default rendering interface.
  *
  * A renderer applies a lighting and environment model to the
- * objects in object manager, applies the projection represented
+ * primitives in world, applies the projection represented
  * by the viewing system, and uses this information to
  * produce a frame buffer with a representation of the environment.
  */
-RtVoid GMANLoadableRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSystem* viewingSys,
+RtVoid GMANLoadableRenderer::render(GMANWorld const& world, GMANFrameBuffer* frameBuffer, GMANViewingSystem* viewingSys,
                                     const GMANOptions& options, const GMANAttributes& attributes)
 
 {
   if (renderer) {
-    renderer->render(frameBuffer, viewingSys, options, attributes);
+    renderer->render(world, frameBuffer, viewingSys, options, attributes);
   } else {
     throw(GMANError(RIE_SYSTEM, RIE_SEVERE, "No renderer available."));
   }
 }
-
-GMANWorldManager* GMANLoadableRenderer::getWorldManager(RtVoid) { return renderer->getWorldManager(); }
 
 GMANPrimitiveFactory* GMANLoadableRenderer::getPrimitiveFactory(RtVoid) { return renderer->getPrimitiveFactory(); }
 

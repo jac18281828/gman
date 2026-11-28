@@ -63,7 +63,7 @@
 #include "gmantexture.h"
 #include "gmanvector.h"
 #include "gmanviewingsystem.h"
-#include "gmanworldmanager.h"
+#include "gmanworld.h"
 #include "ri.h"
 
 namespace gman {
@@ -884,9 +884,9 @@ void renderRow(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& emitters
 
 } // namespace
 
-void GMANPathtraceRenderer::gatherLights() {
+void GMANPathtraceRenderer::gatherLights(GMANWorld const& world) {
   std::size_t ambientCount = 0;
-  emitters = gman::emitters(worldManager, &ambientCount);
+  emitters = gman::emitters(world, &ambientCount);
   skippedAmbientLights = ambientCount;
 }
 
@@ -898,10 +898,10 @@ void GMANPathtraceRenderer::setMultipleImportanceSampling(bool enabled) { multip
 
 void GMANPathtraceRenderer::setWorkers(RtInt workers) { requestedWorkers = workers; }
 
-void GMANPathtraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSystem* viewingSys,
+void GMANPathtraceRenderer::render(GMANWorld const& world, GMANFrameBuffer* frameBuffer, GMANViewingSystem* viewingSys,
                                    GMANOptions const& options, GMANAttributes const& /*attributes*/) {
-  bvh.build(worldManager);
-  gatherLights();
+  bvh.build(world);
+  gatherLights(world);
   droppedPaths = 0;
   guided = gman::GuidedImage();
   bool const denoise = denoiseRequested(options);
@@ -993,7 +993,5 @@ void GMANPathtraceRenderer::denoiseFrame(GMANFrameBuffer* frameBuffer, gman::Atr
        parameters.iterations, gman::atrousColorSigma(guided, parameters), parameters.sigmaNormal,
        parameters.sigmaAlbedo);
 }
-
-GMANWorldManager* GMANPathtraceRenderer::getWorldManager(void) { return &worldManager; }
 
 GMANPrimitiveFactory* GMANPathtraceRenderer::getPrimitiveFactory(void) { return &primitiveFactory; }

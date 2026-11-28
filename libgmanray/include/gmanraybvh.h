@@ -33,15 +33,15 @@
 #include "gmanpoint.h"
 #include "gmanray.h"
 #include "gmanrayprimitive.h"
-#include "gmanworldmanager.h"
+#include "gmanworld.h"
 #include "ri.h"
 
 /*
- * A bounding volume hierarchy over every GMANRayPrimitive worldManager
+ * A bounding volume hierarchy over every GMANRayPrimitive a world
  * holds, so nearestHit finds the nearest ray-primitive hit by pruning
  * subtrees a ray's own interval clears, rather than testing every
  * primitive in turn. build() discards any tree a prior call built and
- * walks worldManager once, splitting each range of primitives by binned
+ * walks the world once, splitting each range of primitives by binned
  * surface-area heuristic over their own bboxes: 16 bins over the range's
  * centroid extent on each axis, the cheapest split by box area times
  * primitive count winning, the lower axis then the lower bin on a tie. A
@@ -57,17 +57,17 @@
  */
 class GMANRAY_EXPORT GMANRayBVH {
 public:
-  // Discards any tree a prior call built, then walks worldManager
-  // (getFirst/getNext) once, keeping each GMANRayPrimitive primitive by
-  // its own insertion order for nearestHit's tie-break -- except a
-  // polygon mesh primitive, which contributes each of its own faces as
-  // its own entry instead of the mesh itself, so a mesh culls per face.
-  // The dynamic_cast is defensive -- GMANRayPrimitiveFactory's factories
-  // guarantee every primitive this renderer's world manager holds is
-  // already a GMANRayPrimitive, the polygon mesh type included. The
-  // build is serial and draws no random number: the same primitives in
-  // the same order give the same tree.
-  void build(GMANWorldManager& worldManager);
+  // Discards any tree a prior call built, then walks world once, keeping
+  // each GMANRayPrimitive by its own insertion order for nearestHit's
+  // tie-break -- except a polygon mesh primitive, which contributes each of
+  // its own faces as its own entry instead of the mesh itself, so a mesh
+  // culls per face. A primitive that is not a GMANRayPrimitive is skipped;
+  // GMANRayPrimitiveFactory's factories guarantee every primitive this
+  // renderer's world holds is already one, the polygon mesh type included.
+  // The tree holds pointers into world and stays valid while world does. The
+  // build is serial and draws no random number: the same primitives in the
+  // same order give the same tree.
+  void build(GMANWorld const& world);
 
   // Finds the nearest hit within ray's own [tmin, tmax]. On a hit,
   // writes it through hit/hitPrimitive and returns true; on a miss,

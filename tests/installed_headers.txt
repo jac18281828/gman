@@ -23,7 +23,6 @@ gmanindirectpass.h
 gmaninvertiblematrix.h
 gmanlightsourcemgr.h
 gmanlightsourceshader.h
-gmanlinearworldmanager.h
 gmanloadable.h
 gmanloadablerenderer.h
 gmanloadableshader.h
@@ -88,7 +87,6 @@ gmanviewingsystem.h
 gmanviewingsysteminputs.h
 gmanvolumeshader.h
 gmanworld.h
-gmanworldmanager.h
 rasterexport.h
 rayexport.h
 ri.h

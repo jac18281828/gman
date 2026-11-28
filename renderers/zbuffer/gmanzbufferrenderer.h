@@ -31,7 +31,6 @@
 #include "gman/export.h"
 #include "gmanattributes.h"
 #include "gmancolor.h"
-#include "gmanlinearworldmanager.h"
 #include "gmanoptions.h"
 #include "gmanoutputpolygon.h"
 #include "gmanowned.h"
@@ -46,7 +45,7 @@
 #include "gmantransform.h"
 #include "gmanvector.h"
 #include "gmanviewingsystem.h"
-#include "gmanworldmanager.h"
+#include "gmanworld.h"
 #include "ri.h"
 
 /*
@@ -209,8 +208,6 @@ private:
 
   AreaLightCountingPrimitiveFactory primitiveFactory;
 
-  GMANLinearWorldManager worldManager;
-
   // private methods
 
   inline void setDepth(int x, int y, RtFloat f) { zbuffer[y * width + x] = f; }
@@ -252,11 +249,11 @@ public:
   inline RtFloat getDepth(int x, int y) const { return zbuffer[y * width + x]; }
 
   /*
-   * Apply a zbuffer environment to the objects in object manager
+   * Apply a zbuffer environment to the objects in world
    * to generate a frameBuffer output.
    */
-  virtual RtVoid render(GMANFrameBuffer* frameBuffer, GMANViewingSystem* viewingSys, const GMANOptions& options,
-                        const GMANAttributes& attributes);
+  virtual RtVoid render(GMANWorld const& world, GMANFrameBuffer* frameBuffer, GMANViewingSystem* viewingSys,
+                        const GMANOptions& options, const GMANAttributes& attributes);
 
   void setHeight(int h) { height = h; };
 
@@ -265,9 +262,6 @@ public:
   void setWidth(int w) { width = w; };
 
   int getWidth(void) { return width; };
-
-  // return its world manager
-  virtual GMANWorldManager* getWorldManager(void);
 
   // return its object manager
   virtual GMANPrimitiveFactory* getPrimitiveFactory(void);

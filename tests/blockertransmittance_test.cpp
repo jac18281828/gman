@@ -35,7 +35,6 @@
 #include "check.h"
 #include "gmanbsdf.h"
 #include "gmancolor.h"
-#include "gmanlinearworldmanager.h"
 #include "gmanmatrix4.h"
 #include "gmanowned.h"
 #include "gmanparameterlist.h"
@@ -48,6 +47,7 @@
 #include "gmanshading.h"
 #include "gmansurfaceshader.h"
 #include "gmanvector.h"
+#include "gmanworld.h"
 #include "maketransform.h"
 #include "ri.h"
 
@@ -101,7 +101,7 @@ std::shared_ptr<GMANSurfaceShader const> asAppearanceShader(GMANSurfaceShader co
 }
 
 struct Blocker {
-  GMANLinearWorldManager world;
+  GMANWorld world;
   GMANRayBVH bvh;
   GMANRay const ray{GMANPoint(-5.0f, 0.0f, 0.0f), GMANVector(1.0f, 0.0f, 0.0f)};
   GMANHit hit;

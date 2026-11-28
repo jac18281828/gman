@@ -114,11 +114,10 @@ public:
   const GMANLight* get(RtLightHandle h) const;
 };
 
-// One light manager per render, like the object and world managers this
-// mirrors. A free function rather than a GMANRenderManImpl member so
-// createParametric (tessellation time, where a primitive's lit vertices
-// are shaded) does not need a light manager threaded through every
-// GMANPrimitiveFactory::getRS* signature to reach it.
+// One light manager per render. A free function rather than a
+// GMANRenderManImpl member so createParametric (tessellation time, where a
+// primitive's lit vertices are shaded) does not need a light manager
+// threaded through every GMANPrimitiveFactory::getRS* signature to reach it.
 GMANLightSourceMgr& gmanLightSourceMgr(RtVoid);
 
 /*

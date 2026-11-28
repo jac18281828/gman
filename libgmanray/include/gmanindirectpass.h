@@ -32,7 +32,7 @@
 #include "gmanray.h"
 #include "gmanrayoccluder.h"
 #include "gmanvector.h"
-#include "gmanworldmanager.h"
+#include "gmanworld.h"
 
 namespace gman {
 
@@ -54,11 +54,10 @@ public:
   virtual ~IndirectPass();
 
   // Readies this pass over world, ahead of any irradiance() call. world is
-  // non-const: GMANWorldManager::getFirst/getNext iterate through a
-  // cursor, and a pass adds, removes and reorders nothing there. occluder
-  // carries the host's BVH; options lets a pass read its settings without
-  // a further interface change.
-  virtual void prepare(GMANWorldManager& world, GMANRayOccluder const& occluder, GMANOptions const& options) = 0;
+  // borrowed and read-only, and a pass may keep pointers into it for as long
+  // as the host keeps the pass. occluder carries the host's BVH; options lets
+  // a pass read its settings without a further interface change.
+  virtual void prepare(GMANWorld const& world, GMANRayOccluder const& occluder, GMANOptions const& options) = 0;
 
   // Indirect light reaching hit from the side I arrives on -- the side
   // facing -I, since a two-sided element can face either way and hit

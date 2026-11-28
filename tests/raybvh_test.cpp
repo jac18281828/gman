@@ -20,7 +20,7 @@
 
 /*
  * GMANRayBVH, tested standalone against a hand-built
- * GMANLinearWorldManager.
+ * GMANWorld.
  *
  * Check 1: a mixed fixture's GMANRayBVH::nearestHit and a small linear
  * scan (linearScan, below) agree on every ray -- identical primitive, t,
@@ -79,7 +79,6 @@
 #include <vector>
 
 #include "check.h"
-#include "gmanlinearworldmanager.h"
 #include "gmanowned.h"
 #include "gmanray.h"
 #include "gmanraybvh.h"
@@ -91,6 +90,7 @@
 #include "gmanraypolygon.h"
 #include "gmanraysphere.h"
 #include "gmanraytorus.h"
+#include "gmanworld.h"
 #include "maketransform.h"
 
 namespace {
@@ -162,7 +162,7 @@ void checkAgreement(GMANRayBVH const& bvh, std::vector<GMANRayPrimitive*> const&
 
 // ---- check 1 ----
 //
-// Builds a mixed, >=16-primitive fixture into worldManager/prims (both
+// Builds a mixed, >=16-primitive fixture into world/prims (both
 // out-parameters, appended in insertion order) and returns the handful of
 // primitives the special-case rays below target. swapOverlap reverses
 // just the overlapping pair's own insertion order, leaving every other
@@ -177,11 +177,11 @@ struct FixtureHandles {
   GMANRayPrimitive* trueTarget = nullptr;
 };
 
-FixtureHandles buildCheck1Fixture(bool swapOverlap, GMANLinearWorldManager& worldManager,
-                                  std::vector<GMANRayPrimitive*>& prims, bool includeSingular = true) {
+FixtureHandles buildCheck1Fixture(bool swapOverlap, GMANWorld& world, std::vector<GMANRayPrimitive*>& prims,
+                                  bool includeSingular = true) {
   auto add = [&](gman::Owned<GMANRayPrimitive> p) {
     prims.push_back(p.get());
-    worldManager.add(std::move(p));
+    world.add(std::move(p));
   };
 
   FixtureHandles handles;
@@ -258,13 +258,13 @@ FixtureHandles buildCheck1Fixture(bool swapOverlap, GMANLinearWorldManager& worl
 }
 
 void runCheck1(bool swapOverlap) {
-  GMANLinearWorldManager worldManager;
+  GMANWorld world;
   std::vector<GMANRayPrimitive*> prims;
-  FixtureHandles const handles = buildCheck1Fixture(swapOverlap, worldManager, prims);
+  FixtureHandles const handles = buildCheck1Fixture(swapOverlap, world, prims);
   check(prims.size() >= 16, "check 1: the fixture holds at least 4x the leaf size");
 
   GMANRayBVH bvh;
-  bvh.build(worldManager);
+  bvh.build(world);
 
   std::string const label = swapOverlap ? " (overlap pair swapped)" : "";
 
@@ -336,11 +336,11 @@ void testCheck1() {
 // surface-area split parts them into two four-primitive leaves rather
 // than grouping the two large spheres together. ----
 void testExitPruningPair() {
-  GMANLinearWorldManager worldManager;
+  GMANWorld world;
   std::vector<GMANRayPrimitive*> prims;
   auto add = [&](gman::Owned<GMANRayPrimitive> p) {
     prims.push_back(p.get());
-    worldManager.add(std::move(p));
+    world.add(std::move(p));
   };
   auto addInside = [&](RtFloat x, RtFloat y, RtFloat z) {
     add(gman::make<GMANRaySphere>(0.5, -0.5, 0.5, 360.0, GMANParameterList(), translated(x, y, z)));
@@ -359,7 +359,7 @@ void testExitPruningPair() {
   addInside(8.0, -8.0, 27.0);
 
   GMANRayBVH bvh;
-  bvh.build(worldManager);
+  bvh.build(world);
 
   GMANRay const ray(GMANPoint(4.9, 0.0, -5.0), GMANVector(0.0, 0.0, 1.0));
   checkAgreement(bvh, prims, ray, "exit-pruning pair");
@@ -456,12 +456,12 @@ bool checkTraversalCounts(GMANRayBVH const& bvh, BoxTestBounds const& bounds, GM
 // positive-direction ray on every axis this fixture's own hand-picked
 // rays travel, since the swap fires only for a negative invD. ----
 void runRandomSweep(bool includeSingular) {
-  GMANLinearWorldManager worldManager;
+  GMANWorld world;
   std::vector<GMANRayPrimitive*> prims;
-  buildCheck1Fixture(false, worldManager, prims, includeSingular);
+  buildCheck1Fixture(false, world, prims, includeSingular);
 
   GMANRayBVH bvh;
-  bvh.build(worldManager);
+  bvh.build(world);
 
   BoxTestBounds bounds;
   bounds.nodeCount = maxNodeCount(prims.size());
@@ -535,17 +535,17 @@ void testRandomSweep() {
 // match insertion order, so testing only one leaves the other silent ----
 void testCoincidentTieBothOrders() {
   for (bool swapOrder : {false, true}) {
-    GMANLinearWorldManager worldManager;
+    GMANWorld world;
     auto diskA = gman::make<GMANRayDisk>(40.0, 3.0, 360.0, GMANParameterList(), translated(0.0, 0.0, 0.0));
     auto diskB = gman::make<GMANRayDisk>(40.0, 3.0, 360.0, GMANParameterList(), translated(0.0, 0.0, 0.0));
     auto& firstOwner = swapOrder ? diskB : diskA;
     auto& secondOwner = swapOrder ? diskA : diskB;
     GMANRayPrimitive* const first = firstOwner.get();
-    worldManager.add(std::move(firstOwner));
-    worldManager.add(std::move(secondOwner));
+    world.add(std::move(firstOwner));
+    world.add(std::move(secondOwner));
 
     GMANRayBVH bvh;
-    bvh.build(worldManager);
+    bvh.build(world);
 
     GMANRay const ray(GMANPoint(0.0, 0.0, -5.0), GMANVector(0.0, 0.0, 1.0));
     GMANHit hit;
@@ -561,14 +561,14 @@ void testBoxTestsPerNode() {
   constexpr RtFloat kSpacing = 3.0f;
   constexpr RtFloat kRadius = 0.4f;
 
-  GMANLinearWorldManager worldManager;
+  GMANWorld world;
   for (std::size_t i = 0; i < kCount; ++i) {
-    worldManager.add(gman::make<GMANRaySphere>(kRadius, -kRadius, kRadius, 360.0, GMANParameterList(),
-                                               translated((RtFloat)i * kSpacing, 0.0, 0.0)));
+    world.add(gman::make<GMANRaySphere>(kRadius, -kRadius, kRadius, 360.0, GMANParameterList(),
+                                        translated((RtFloat)i * kSpacing, 0.0, 0.0)));
   }
 
   GMANRayBVH bvh;
-  bvh.build(worldManager);
+  bvh.build(world);
   check(bvh.treeDepth() == 1, "box tests: five primitives make a root and two leaves");
 
   GMANRay const ray(GMANPoint(-5.0, 0.0, 0.0), GMANVector(1.0, 0.0, 0.0));
@@ -582,9 +582,9 @@ void testBoxTestsPerNode() {
   check(boxTests == 3, "box tests: a ray entering both leaves tests the root and each leaf once");
 }
 
-void addSpheresInPlane(GMANLinearWorldManager& worldManager, std::initializer_list<RtFloat> const& xs) {
+void addSpheresInPlane(GMANWorld& world, std::initializer_list<RtFloat> const& xs) {
   for (RtFloat const x : xs) {
-    worldManager.add(gman::make<GMANRaySphere>(0.4, -0.4, 0.4, 360.0, GMANParameterList(), translated(x, 0.0, 0.0)));
+    world.add(gman::make<GMANRaySphere>(0.4, -0.4, 0.4, 360.0, GMANParameterList(), translated(x, 0.0, 0.0)));
   }
 }
 
@@ -597,22 +597,22 @@ void testTieAtClampedEntry() {
   RtFloat const hitT = -kOriginZ;
 
   for (bool swapOrder : {false, true}) {
-    GMANLinearWorldManager worldManager;
+    GMANWorld world;
     auto leftOwner = gman::make<GMANRayPolygon>(quadInPlane(-12.0, 1.0), GMANParameterList());
     auto rightOwner = gman::make<GMANRayPolygon>(quadInPlane(-1.0, 12.0), GMANParameterList());
     auto* const leftPolygon = leftOwner.get();
     auto* const rightPolygon = rightOwner.get();
 
-    addSpheresInPlane(worldManager, {-9.0, -6.0});
+    addSpheresInPlane(world, {-9.0, -6.0});
     auto& firstOwner = swapOrder ? rightOwner : leftOwner;
     auto& secondOwner = swapOrder ? leftOwner : rightOwner;
     GMANRayPrimitive* const first = firstOwner.get();
-    worldManager.add(std::move(firstOwner));
-    worldManager.add(std::move(secondOwner));
-    addSpheresInPlane(worldManager, {6.0, 9.0});
+    world.add(std::move(firstOwner));
+    world.add(std::move(secondOwner));
+    addSpheresInPlane(world, {6.0, 9.0});
 
     GMANRayBVH bvh;
-    bvh.build(worldManager);
+    bvh.build(world);
 
     GMANRay const ray(GMANPoint(0.0, 0.0, kOriginZ), GMANVector(0.0, 0.0, 1.0), hitT, RI_INFINITY);
     GMANHit leftHit;
@@ -638,7 +638,7 @@ void testTieUnderBestHitLimit() {
   RtFloat const hitT = -kOriginZ;
 
   for (bool swapOrder : {false, true}) {
-    GMANLinearWorldManager worldManager;
+    GMANWorld world;
     auto leftOwner = gman::make<GMANRayPolygon>(quadInPlane(-12.0, 1.0), GMANParameterList());
     auto rightOwner = gman::make<GMANRayPolygon>(quadInPlane(-1.0, 12.0), GMANParameterList());
     auto* const leftPolygon = leftOwner.get();
@@ -647,13 +647,13 @@ void testTieUnderBestHitLimit() {
     auto& secondOwner = swapOrder ? leftOwner : rightOwner;
     GMANRayPrimitive* const first = firstOwner.get();
 
-    addSpheresInPlane(worldManager, {-9.0, -6.0});
-    worldManager.add(std::move(firstOwner));
-    worldManager.add(std::move(secondOwner));
-    addSpheresInPlane(worldManager, {6.0, 9.0, 10.0, 11.0});
+    addSpheresInPlane(world, {-9.0, -6.0});
+    world.add(std::move(firstOwner));
+    world.add(std::move(secondOwner));
+    addSpheresInPlane(world, {6.0, 9.0, 10.0, 11.0});
 
     GMANRayBVH bvh;
-    bvh.build(worldManager);
+    bvh.build(world);
 
     GMANRay const ray(GMANPoint(0.0, 0.0, kOriginZ), GMANVector(0.0, 0.0, 1.0), hitT, RI_INFINITY);
     GMANHit leftHit;
@@ -689,31 +689,31 @@ std::size_t primitiveTestsAlongZ(GMANRayBVH const& bvh, RtFloat x, RtFloat y) {
 }
 
 void testTieWithinAxisTakesLowestPlane() {
-  GMANLinearWorldManager worldManager;
+  GMANWorld world;
   for (RtFloat const x : {-4.0f, -2.0f, 0.0f, 2.0f, 4.0f}) {
-    worldManager.add(gman::make<GMANRayPolygon>(quadInPlane(x - 0.5f, x + 0.5f), GMANParameterList()));
+    world.add(gman::make<GMANRayPolygon>(quadInPlane(x - 0.5f, x + 0.5f), GMANParameterList()));
   }
 
   GMANRayBVH bvh;
-  bvh.build(worldManager);
+  bvh.build(world);
   check(primitiveTestsAlongZ(bvh, -4.0f, 0.0f) == 2,
         "tie within an axis: the lowest of the equally cheap planes splits two quads from three");
 }
 
 void testTieAcrossAxesTakesLowestAxis() {
-  GMANLinearWorldManager worldManager;
+  GMANWorld world;
   for (auto const& centre :
        {std::pair<RtFloat, RtFloat>{-2.0f, 0.0f}, {2.0f, 0.0f}, {0.0f, -2.0f}, {0.0f, 2.0f}, {0.0f, 0.0f}}) {
-    worldManager.add(gman::make<GMANRayPolygon>(unitSquareAt(centre.first, centre.second), GMANParameterList()));
+    world.add(gman::make<GMANRayPolygon>(unitSquareAt(centre.first, centre.second), GMANParameterList()));
   }
 
   GMANRayBVH bvh;
-  bvh.build(worldManager);
+  bvh.build(world);
   check(primitiveTestsAlongZ(bvh, -2.0f, 0.0f) == 1,
         "tie across axes: the x sweep, the lower axis, isolates the quad at x = -2 in a leaf of one");
 }
 
-void addWall(GMANLinearWorldManager& worldManager, std::vector<GMANRayPrimitive*>& prims, int axis, RtFloat side) {
+void addWall(GMANWorld& world, std::vector<GMANRayPrimitive*>& prims, int axis, RtFloat side) {
   RtFloat const h = kRoomHalfSize;
   auto corner = [&](RtFloat u, RtFloat v) {
     RtFloat c[3];
@@ -727,11 +727,11 @@ void addWall(GMANLinearWorldManager& worldManager, std::vector<GMANRayPrimitive*
   std::vector<GMANPoint> const quad = {corner(-h, -h), corner(h, -h), corner(h, h), corner(-h, h)};
   auto wallOwner = gman::make<GMANRayPolygon>(quad, GMANParameterList());
   auto* const wall = wallOwner.get();
-  worldManager.add(std::move(wallOwner));
+  world.add(std::move(wallOwner));
   prims.push_back(wall);
 }
 
-void addCornerCluster(GMANLinearWorldManager& worldManager, std::vector<GMANRayPrimitive*>& prims) {
+void addCornerCluster(GMANWorld& world, std::vector<GMANRayPrimitive*>& prims) {
   constexpr int kSide = 7;
   constexpr RtFloat kPitch = 1.5f;
   constexpr RtFloat kHalf = 0.4f;
@@ -755,7 +755,7 @@ void addCornerCluster(GMANLinearWorldManager& worldManager, std::vector<GMANRayP
         }
         auto polygonOwner = gman::make<GMANRayPolygon>(quad, GMANParameterList());
         auto* const polygon = polygonOwner.get();
-        worldManager.add(std::move(polygonOwner));
+        world.add(std::move(polygonOwner));
         prims.push_back(polygon);
       }
     }
@@ -763,16 +763,16 @@ void addCornerCluster(GMANLinearWorldManager& worldManager, std::vector<GMANRayP
 }
 
 void testSurfaceAreaFewerBoxTests() {
-  GMANLinearWorldManager worldManager;
+  GMANWorld world;
   std::vector<GMANRayPrimitive*> prims;
   for (int axis = 0; axis < 3; ++axis) {
-    addWall(worldManager, prims, axis, -1.0f);
-    addWall(worldManager, prims, axis, 1.0f);
+    addWall(world, prims, axis, -1.0f);
+    addWall(world, prims, axis, 1.0f);
   }
-  addCornerCluster(worldManager, prims);
+  addCornerCluster(world, prims);
 
   GMANRayBVH bvh;
-  bvh.build(worldManager);
+  bvh.build(world);
 
   std::size_t boxTests = 0;
   std::size_t clusterHits = 0;
@@ -804,7 +804,7 @@ void testSurfaceAreaFewerBoxTests() {
 
 void testDepthFitsTheStack() {
   constexpr int kPlateCount = 120;
-  GMANLinearWorldManager worldManager;
+  GMANWorld world;
   std::vector<GMANRayPrimitive*> prims;
   for (int j = 0; j < kPlateCount; ++j) {
     RtFloat const x = (j % 2 == 0 ? 1.0f : -1.0f) * std::pow(0.9f, (RtFloat)j);
@@ -813,12 +813,12 @@ void testDepthFitsTheStack() {
                                           GMANPoint(x, half, half), GMANPoint(x, -half, half)};
     auto polygonOwner = gman::make<GMANRayPolygon>(plate, GMANParameterList());
     auto* const polygon = polygonOwner.get();
-    worldManager.add(std::move(polygonOwner));
+    world.add(std::move(polygonOwner));
     prims.push_back(polygon);
   }
 
   GMANRayBVH bvh;
-  bvh.build(worldManager);
+  bvh.build(world);
   check(bvh.treeDepth() < (std::size_t)std::numeric_limits<std::size_t>::digits,
         "depth: a tree over nested plates stays inside the traversal stack");
 
@@ -840,7 +840,7 @@ void testCheck2() {
   // this fixture, hardcoded rather than re-derived per run.
   int const insertionOrder[kCount] = {7, 2, 13, 0, 9, 4, 11, 15, 1, 8, 5, 14, 3, 10, 6, 12};
 
-  GMANLinearWorldManager worldManager;
+  GMANWorld world;
   GMANRayPrimitive* bySpatialIndex[kCount];
   for (int slot = 0; slot < kCount; ++slot) {
     int const spatialIndex = insertionOrder[slot];
@@ -848,12 +848,12 @@ void testCheck2() {
     auto sphereOwner =
         gman::make<GMANRaySphere>(kRadius, -kRadius, kRadius, 360.0, GMANParameterList(), translated(x, 0.0, 0.0));
     auto* const sphere = sphereOwner.get();
-    worldManager.add(std::move(sphereOwner));
+    world.add(std::move(sphereOwner));
     bySpatialIndex[spatialIndex] = sphere;
   }
 
   GMANRayBVH bvh;
-  bvh.build(worldManager);
+  bvh.build(world);
 
   // Query 1: aimed at the row's near end (spatial index 0), direction
   // along the row.
@@ -907,13 +907,13 @@ void testCheck2() {
 // here -- the ray may or may not cross the sphere's own surface at this
 // exact x, but the leaf must be reached either way. ----
 void testSignedZeroFacePlane() {
-  GMANLinearWorldManager worldManager;
+  GMANWorld world;
   auto sphereOwner = gman::make<GMANRaySphere>(1.0, -1.0, 1.0, 360.0, GMANParameterList(), translated(0.0, 0.0, 10.0));
   auto* const sphere = sphereOwner.get();
-  worldManager.add(std::move(sphereOwner));
+  world.add(std::move(sphereOwner));
 
   GMANRayBVH bvh;
-  bvh.build(worldManager);
+  bvh.build(world);
 
   GMANPoint const boxMin = sphere->getBBox().getMin();
   GMANPoint const boxMax = sphere->getBBox().getMax();
@@ -954,11 +954,11 @@ void testMissLeavesHitUntouched() {
   constexpr RtFloat kSentinelT = 12345.0f;
   GMANRay const missRay(GMANPoint(100.0, 100.0, -5.0), GMANVector(0.0, 0.0, 1.0));
 
-  GMANLinearWorldManager worldManager;
-  worldManager.add(gman::make<GMANRaySphere>(1.0, -1.0, 1.0, 360.0, GMANParameterList(), translated(0.0, 0.0, 10.0)));
+  GMANWorld world;
+  world.add(gman::make<GMANRaySphere>(1.0, -1.0, 1.0, 360.0, GMANParameterList(), translated(0.0, 0.0, 10.0)));
 
   GMANRayBVH bvh;
-  bvh.build(worldManager);
+  bvh.build(world);
 
   GMANHit hit;
   hit.t = kSentinelT;
@@ -983,19 +983,19 @@ void testMissLeavesHitUntouched() {
 void testCoincidentCentroids() {
   constexpr int kCount = 9;
 
-  GMANLinearWorldManager worldManager;
+  GMANWorld world;
   std::vector<GMANRayPrimitive*> prims;
   for (int i = 1; i <= kCount; ++i) {
     RtFloat const radius = (RtFloat)i;
     auto sphereOwner =
         gman::make<GMANRaySphere>(radius, -radius, radius, 360.0, GMANParameterList(), translated(0.0, 0.0, 20.0));
     auto* const sphere = sphereOwner.get();
-    worldManager.add(std::move(sphereOwner));
+    world.add(std::move(sphereOwner));
     prims.push_back(sphere);
   }
 
   GMANRayBVH bvh;
-  bvh.build(worldManager);
+  bvh.build(world);
   check(bvh.treeDepth() == 2, "coincident centroids: nine primitives split at the object median");
 
   for (int i = 0; i <= kCount; ++i) {
@@ -1008,8 +1008,8 @@ void testCoincidentCentroids() {
 // builds of check 1's fixture agree on depth and every sweep ray's box
 // and primitive tests. ----
 void testBuildIsDeterministic() {
-  GMANLinearWorldManager firstWorld;
-  GMANLinearWorldManager secondWorld;
+  GMANWorld firstWorld;
+  GMANWorld secondWorld;
   std::vector<GMANRayPrimitive*> firstPrims;
   std::vector<GMANRayPrimitive*> secondPrims;
   buildCheck1Fixture(false, firstWorld, firstPrims, false);

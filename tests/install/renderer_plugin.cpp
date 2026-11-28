@@ -21,17 +21,17 @@
 /*
  * A renderer built outside the gman tree from the installed headers alone,
  * linking gman::gman and gman::gman_ray and nothing else. It subclasses
- * GMANRenderer, hands back a core world manager and a ray object manager,
+ * GMANRenderer, takes a core world and hands back a ray object manager,
  * calls one exported function of each library and exports the entry points a
  * renderer plugin defines. The module is built and linked only.
  */
 
-#include <gman/gmanlinearworldmanager.h>
 #include <gman/gmanloadable.h>
 #include <gman/gmanlog.h>
 #include <gman/gmanrayoccluder.h>
 #include <gman/gmanrayprimitivefactory.h>
 #include <gman/gmanrenderer.h>
+#include <gman/gmanworld.h>
 
 namespace {
 
@@ -43,17 +43,15 @@ public:
 
   RtFloat getDepth(int /*xs*/, int /*ys*/) const override { return RI_INFINITY; }
 
-  RtVoid render(GMANFrameBuffer* frameBuffer, GMANViewingSystem* /*viewingSys*/, GMANOptions const& /*options*/,
-                GMANAttributes const& /*attributes*/) override {
+  RtVoid render(GMANWorld const& /*world*/, GMANFrameBuffer* frameBuffer, GMANViewingSystem* /*viewingSys*/,
+                GMANOptions const& /*options*/, GMANAttributes const& /*attributes*/) override {
     frameBuffer->setPixel(0, 0, gman::oneMinus(frameBuffer->getPixel(0, 0)));
     logWrite(LOGLVL_DEBUG, "inverted the first pixel");
   }
 
-  GMANWorldManager* getWorldManager(RtVoid) override { return &worldManager; }
   GMANPrimitiveFactory* getPrimitiveFactory(RtVoid) override { return &primitiveFactory; }
 
 private:
-  GMANLinearWorldManager worldManager;
   GMANRayPrimitiveFactory primitiveFactory;
 };
 

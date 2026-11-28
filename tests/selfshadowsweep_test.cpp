@@ -40,7 +40,6 @@
 
 #include "check.h"
 #include "gmanlightsourcemgr.h"
-#include "gmanlinearworldmanager.h"
 #include "gmanmath.h"
 #include "gmanmatrix4.h"
 #include "gmanowned.h"
@@ -58,6 +57,7 @@
 #include "gmanraysphere.h"
 #include "gmanraytorus.h"
 #include "gmanvector.h"
+#include "gmanworld.h"
 #include "maketransform.h"
 #include "ri.h"
 
@@ -106,8 +106,8 @@ GMANPoint placementCenter(GMANMatrix4 const& placement) {
 // where the sweep's ray origins circle.
 struct Cell {
   std::string name;
-  GMANRayPrimitive* primitive; // owned by worldManager below
-  GMANLinearWorldManager worldManager;
+  GMANRayPrimitive* primitive; // owned by world below
+  GMANWorld world;
   GMANRayBVH bvh;
   GMANVector towardLight; // camera space, unit length
   GMANPoint center;
@@ -123,8 +123,8 @@ struct Cell {
     gman::Appearance opaque;
     opaque.Os = GMANColor(1.0f, 1.0f, 1.0f);
     primitive->setAppearance(opaque);
-    worldManager.add(std::move(prim));
-    bvh.build(worldManager);
+    world.add(std::move(prim));
+    bvh.build(world);
     towardLight = gman::transformDirection(placement, objectTowardLight);
     towardLight.normalize();
     center = placementCenter(placement);
@@ -338,10 +338,10 @@ void sweepLargePrimitiveRow(RtFloat radius) {
   opaque.Os = GMANColor(1.0f, 1.0f, 1.0f);
   sphere->setAppearance(opaque);
 
-  GMANLinearWorldManager worldManager;
-  worldManager.add(std::move(sphereOwner));
+  GMANWorld world;
+  world.add(std::move(sphereOwner));
   GMANRayBVH bvh;
-  bvh.build(worldManager);
+  bvh.build(world);
   GMANRayOccluder const occluder(bvh);
 
   // The near cap's own outward normal is close to (0,0,-1); towardLight

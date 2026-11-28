@@ -261,8 +261,8 @@ if(GMAN_BUILD_RAYTRACER)
 endif()
 
 # GMANRenderManImpl's renderer, viewingSystem and output own nothing, and its
-# borrowed primitiveFactory and worldManager point nowhere, from construction;
-# RiEnd leaves them so. See tests/rendermanpointers_test.cpp.
+# borrowed primitiveFactory points nowhere, from construction; RiEnd leaves
+# them so. See tests/rendermanpointers_test.cpp.
 add_executable(gman_rendermanpointers rendermanpointers_test.cpp)
 target_link_libraries(gman_rendermanpointers PRIVATE gman gman_internal_headers)
 add_dependencies(gman_rendermanpointers gman_zbuffer)
@@ -2881,7 +2881,7 @@ set_tests_properties(rayplacementaccessors PROPERTIES
   TIMEOUT 30)
 
 # GMANRayBVH, tested standalone against a hand-built
-# GMANLinearWorldManager -- identical hits against a linear scan and a
+# GMANWorld -- identical hits against a linear scan and a
 # bounded primitive-test count -- linked against gman_ray for the same
 # reason as gman_raysphere above. See tests/raybvh_test.cpp.
 add_executable(gman_raybvh raybvh_test.cpp)
@@ -4288,7 +4288,7 @@ set_tests_properties(polygonnverts PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# A world owns the primitives it is given: a GMANLinearWorldManager destroys
+# A world owns the primitives it is given: a GMANWorld destroys
 # each one with itself, and an empty gman::Owned adds nothing. Each factory
 # returns an empty owner for a mesh with no face, and a failed request adds
 # nothing to the world, which an in-process ray-traced render with a radiosity

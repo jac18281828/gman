@@ -53,7 +53,6 @@
 #include "gmanemitter.h"
 #include "gmaninvertiblematrix.h"
 #include "gmanlightsourcemgr.h"
-#include "gmanlinearworldmanager.h"
 #include "gmanlog.h"
 #include "gmanmath.h"
 #include "gmanmatrix4.h"
@@ -69,6 +68,7 @@
 #include "gmanshading.h"
 #include "gmantransform.h"
 #include "gmanvector.h"
+#include "gmanworld.h"
 #include "maketransform.h"
 #include "ri.h"
 #include "samplingstats.h"
@@ -97,7 +97,7 @@ std::string readFile(std::string const& path) {
 // Returns the world and every hand-built object it owns, all outliving it
 // for the caller's own inspection.
 struct EmitterWorld {
-  GMANLinearWorldManager world;
+  GMANWorld world;
   GMANRaySphere* sphere;
   GMANLight sphereLight{GMAN_LIGHT_AREA, GMANColor(4.0f, 4.0f, 4.0f), GMANPoint(), GMANVector()};
   GMANRayPolygon* polygon;
@@ -217,7 +217,7 @@ void testSingularEnumeration() {
   gman::Appearance flatDiskAppearance;
   flatDiskAppearance.areaLight = &flatDiskLight;
 
-  GMANLinearWorldManager world;
+  GMANWorld world;
   auto regularOwner = gman::make<GMANRaySphere>(2.0f, -2.0f, 2.0f, 360.0f, GMANParameterList());
   auto* const regular = regularOwner.get();
   regular->setAppearance(regularAppearance);
@@ -300,7 +300,7 @@ void testSingularEmitters() {
 
 // power().
 void testPower() {
-  // GMANLinearWorldManager owns and deletes what it is given, so the
+  // GMANWorld owns and deletes what it is given, so the
   // sphere here is heap-allocated.
   auto fullSphere = gman::make<GMANRaySphere>(2.0f, -2.0f, 2.0f, 360.0f, GMANParameterList());
   GMANLight const light(GMAN_LIGHT_AREA, GMANColor(4.0f, 4.0f, 4.0f), GMANPoint(), GMANVector());
@@ -308,7 +308,7 @@ void testPower() {
   appearance.areaLight = &light;
   fullSphere->setAppearance(appearance);
 
-  GMANLinearWorldManager world;
+  GMANWorld world;
   world.add(std::move(fullSphere));
   std::vector<gman::Emitter> const list = gman::emitters(world);
   check(list.size() == 1, "power: one area emitter enumerated");
@@ -345,7 +345,7 @@ void testPower() {
   deltaAppearance.lights = {&pointLight};
   deltaSphere->setAppearance(deltaAppearance);
 
-  GMANLinearWorldManager deltaWorld;
+  GMANWorld deltaWorld;
   deltaWorld.add(std::move(deltaSphere));
   std::vector<gman::Emitter> const deltaList = gman::emitters(deltaWorld);
   check(deltaList.size() == 1, "power: one delta emitter enumerated");
@@ -451,7 +451,7 @@ void testScaledSphere(RtFloat scale, std::uint32_t dim) {
   appearance.areaLight = &light;
   sphere->setAppearance(appearance);
 
-  GMANLinearWorldManager world;
+  GMANWorld world;
   world.add(std::move(sphere));
   std::vector<gman::Emitter> const list = gman::emitters(world);
   check(list.size() == 1, "scaled sphere: one area emitter enumerated");
@@ -507,7 +507,7 @@ void testScaledDisk() {
   appearance.areaLight = &light;
   disk->setAppearance(appearance);
 
-  GMANLinearWorldManager world;
+  GMANWorld world;
   world.add(std::move(diskOwner));
   std::vector<gman::Emitter> const list = gman::emitters(world);
   check(list.size() == 1, "scaled disk: one area emitter enumerated");
@@ -838,7 +838,7 @@ void testEmitterIndex() {
   GMANLight const meshLight(GMAN_LIGHT_AREA, GMANColor(4.0f, 4.0f, 4.0f), GMANPoint(), GMANVector());
   GMANLight const pointLight(GMAN_LIGHT_POINT, GMANColor(5.0f, 5.0f, 5.0f), GMANPoint(0.0f, 0.0f, -5.0f), GMANVector());
 
-  GMANLinearWorldManager world;
+  GMANWorld world;
   auto taggedOwner = gman::make<GMANRaySphere>(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList());
   auto* const taggedSphere = taggedOwner.get();
   taggedSphere->setAppearance(areaLightAppearance(sphereLight));

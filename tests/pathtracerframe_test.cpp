@@ -56,6 +56,7 @@
 #include "gmanraysphere.h"
 #include "gmanvector.h"
 #include "gmanvsperspective.h"
+#include "gmanworld.h"
 #include "pathtracerscene.h"
 #include "ri.h"
 #include "samplingstats.h"
@@ -87,9 +88,8 @@ bool pixelClearsAbove(gman::VSPerspective& viewingSys, int px, int py) {
   return true;
 }
 
-GMANPathtraceRenderer* buildFloorRenderer(GMANColor const& cs, GMANColor const& os,
-                                          std::vector<GMANLight const*> const& lights) {
-  const auto renderer = new GMANPathtraceRenderer();
+GMANWorld buildFloorWorld(GMANColor const& cs, GMANColor const& os, std::vector<GMANLight const*> const& lights) {
+  GMANWorld world;
   auto floor = buildFloor();
   gman::Appearance appearance;
   appearance.shader = loadShader("matte", matteParams(1.0f));
@@ -97,8 +97,8 @@ GMANPathtraceRenderer* buildFloorRenderer(GMANColor const& cs, GMANColor const& 
   appearance.Os = os;
   appearance.lights = lights;
   floor->setAppearance(appearance);
-  renderer->getWorldManager()->add(std::move(floor));
-  return renderer;
+  world.add(std::move(floor));
+  return world;
 }
 
 std::string readFile(std::string const& path) {
@@ -122,9 +122,10 @@ void checkEscape() {
   gman::VSPerspective viewingSys(kRes, kRes, squareScreenWindow(), identity, 90.0f, 0.5f, 50.0f);
 
   GMANPathtraceRenderer renderer;
+  GMANWorld world;
   GMANFrameBuffer frameBuffer(kRes, kRes, options.getBackground());
   GMANAttributes const attr;
-  renderer.render(&frameBuffer, &viewingSys, options, attr);
+  renderer.render(world, &frameBuffer, &viewingSys, options, attr);
 
   bool everyPixelBackground = true;
   bool everyAlphaZero = true;
@@ -152,8 +153,9 @@ void checkEscape() {
 void checkEnvironment() {
   RtFloat const reflectance = 0.5f;
   std::vector<GMANLight const*> const noLights;
-  std::unique_ptr<GMANPathtraceRenderer> renderer(
-      buildFloorRenderer(GMANColor(reflectance, reflectance, reflectance), GMANColor(1.0f, 1.0f, 1.0f), noLights));
+  GMANPathtraceRenderer renderer;
+  const auto world =
+      buildFloorWorld(GMANColor(reflectance, reflectance, reflectance), GMANColor(1.0f, 1.0f, 1.0f), noLights);
 
   GMANOptions options;
   options.setFormat(kFloorRes, kFloorRes, 1.0f);
@@ -167,7 +169,7 @@ void checkEnvironment() {
 
   GMANFrameBuffer frameBuffer(kFloorRes, kFloorRes, options.getBackground());
   GMANAttributes const attr;
-  renderer->render(&frameBuffer, &viewingSys, options, attr);
+  renderer.render(world, &frameBuffer, &viewingSys, options, attr);
 
   GMANColor const expected(reflectance * kDefaultBackground.getRed(), reflectance * kDefaultBackground.getGreen(),
                            reflectance * kDefaultBackground.getBlue());
@@ -215,7 +217,8 @@ void checkEnvironment() {
 void renderAndCheckCoverage(GMANColor const& cs, GMANColor const& os, std::vector<GMANLight const*> const& lights,
                             GMANColor const& background, GMANColor const& expectedColor, GMANColor const& expectedAlpha,
                             double colorFloor, std::string const& label) {
-  std::unique_ptr<GMANPathtraceRenderer> renderer(buildFloorRenderer(cs, os, lights));
+  GMANPathtraceRenderer renderer;
+  const auto world = buildFloorWorld(cs, os, lights);
 
   GMANOptions options;
   options.setFormat(kFloorRes, kFloorRes, 1.0f);
@@ -229,7 +232,7 @@ void renderAndCheckCoverage(GMANColor const& cs, GMANColor const& os, std::vecto
 
   GMANFrameBuffer frameBuffer(kFloorRes, kFloorRes, options.getBackground());
   GMANAttributes const attr;
-  renderer->render(&frameBuffer, &viewingSys, options, attr);
+  renderer.render(world, &frameBuffer, &viewingSys, options, attr);
 
   std::vector<double> colorResiduals[3];
   std::vector<double> alphaResiduals[3];
@@ -249,7 +252,7 @@ void renderAndCheckCoverage(GMANColor const& cs, GMANColor const& os, std::vecto
     }
   }
   check(measured >= kMinMeasuredPixels, label + ": at least 400 pixels measured");
-  check(renderer->droppedPathCount() == 0, label + ": droppedPathCount() is 0");
+  check(renderer.droppedPathCount() == 0, label + ": droppedPathCount() is 0");
 
   char const* const channelName[3] = {"red", "green", "blue"};
   for (int c = 0; c < 3; ++c) {
@@ -290,6 +293,7 @@ void checkCappedCameraPath() {
   constexpr int kLayers = gman::kMaxCompositeLayers + 1;
 
   GMANPathtraceRenderer renderer;
+  GMANWorld world;
   for (int layer = 0; layer < kLayers; ++layer) {
     RtFloat const z = (RtFloat)(layer + 1);
     std::vector<GMANPoint> const verts = {GMANPoint(-100.0f, -100.0f, z), GMANPoint(-100.0f, 100.0f, z),
@@ -300,7 +304,7 @@ void checkCappedCameraPath() {
     appearance.Cs = GMANColor(0.5f, 0.5f, 0.5f);
     appearance.Os = GMANColor(0.0f, 0.0f, 0.0f);
     wall->setAppearance(appearance);
-    renderer.getWorldManager()->add(std::move(wall));
+    world.add(std::move(wall));
   }
 
   GMANOptions options;
@@ -314,7 +318,7 @@ void checkCappedCameraPath() {
 
   GMANFrameBuffer frameBuffer(kRes, kRes, options.getBackground());
   GMANAttributes const attr;
-  renderer.render(&frameBuffer, &viewingSys, options, attr);
+  renderer.render(world, &frameBuffer, &viewingSys, options, attr);
 
   GMANColor const black(0.0f, 0.0f, 0.0f);
   bool everyAlphaOne = true;
@@ -348,7 +352,8 @@ void checkDepth() {
   wall->setAppearance(appearance);
 
   GMANPathtraceRenderer renderer;
-  renderer.getWorldManager()->add(std::move(wall));
+  GMANWorld world;
+  world.add(std::move(wall));
 
   GMANOptions options;
   options.setFormat(kRes, kRes, 1.0f);
@@ -361,7 +366,7 @@ void checkDepth() {
 
   GMANFrameBuffer frameBuffer(kRes, kRes, options.getBackground());
   GMANAttributes const attr;
-  renderer.render(&frameBuffer, &viewingSys, options, attr);
+  renderer.render(world, &frameBuffer, &viewingSys, options, attr);
 
   bool everyDepthNear = true;
   bool everyAlphaOne = true;
@@ -400,7 +405,8 @@ void checkAntialiasing() {
   wall->setAppearance(appearance);
 
   GMANPathtraceRenderer renderer;
-  renderer.getWorldManager()->add(std::move(wall));
+  GMANWorld world;
+  world.add(std::move(wall));
 
   GMANOptions options;
   options.setFormat(kRes, kRes, 1.0f);
@@ -413,7 +419,7 @@ void checkAntialiasing() {
 
   GMANFrameBuffer frameBuffer(kRes, kRes, options.getBackground());
   GMANAttributes const attr;
-  renderer.render(&frameBuffer, &viewingSys, options, attr);
+  renderer.render(world, &frameBuffer, &viewingSys, options, attr);
 
   std::vector<double> alphaValues;
   for (int y = 0; y < kRes; ++y) {
@@ -429,8 +435,8 @@ void checkAntialiasing() {
 // The two-point-light floor scene several checks below share, at a smaller
 // format so they fit within the debug gate's own time bound; they compare
 // renders with each other.
-void buildTwoLightScene(GMANPathtraceRenderer& renderer, std::vector<GMANLight const*>& lightsOut,
-                        GMANLight const*& firstLight, GMANLight const*& secondLight) {
+void buildTwoLightScene(GMANWorld& world, std::vector<GMANLight const*>& lightsOut, GMANLight const*& firstLight,
+                        GMANLight const*& secondLight) {
   static GMANLight const light1(GMAN_LIGHT_POINT, GMANColor(4.0f, 4.0f, 4.0f), GMANPoint(-1.5f, -2.0f, 7.0f),
                                 GMANVector());
   static GMANLight const light2(GMAN_LIGHT_POINT, GMANColor(2.0f, 2.0f, 2.0f), GMANPoint(2.0f, -3.0f, 10.0f),
@@ -446,7 +452,7 @@ void buildTwoLightScene(GMANPathtraceRenderer& renderer, std::vector<GMANLight c
   appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   appearance.lights = lightsOut;
   floor->setAppearance(appearance);
-  renderer.getWorldManager()->add(std::move(floor));
+  world.add(std::move(floor));
 }
 
 constexpr RtInt kRepeatRes = 41;
@@ -484,21 +490,23 @@ void checkRepeat() {
   gman::VSPerspective viewingSysB(kRepeatRes, kRepeatRes, squareScreenWindow(), identity, 90.0f, 0.5f, 50.0f);
 
   GMANPathtraceRenderer rendererA;
+  GMANWorld worldA;
   std::vector<GMANLight const*> lightsA;
   GMANLight const *l1a, *l2a;
-  buildTwoLightScene(rendererA, lightsA, l1a, l2a);
+  buildTwoLightScene(worldA, lightsA, l1a, l2a);
 
   GMANPathtraceRenderer rendererB;
+  GMANWorld worldB;
   std::vector<GMANLight const*> lightsB;
   GMANLight const *l1b, *l2b;
-  buildTwoLightScene(rendererB, lightsB, l1b, l2b);
+  buildTwoLightScene(worldB, lightsB, l1b, l2b);
 
   GMANOptions const options = twoLightOptions();
   GMANFrameBuffer frameA(kRepeatRes, kRepeatRes, options.getBackground());
   GMANFrameBuffer frameB(kRepeatRes, kRepeatRes, options.getBackground());
   GMANAttributes const attr;
-  rendererA.render(&frameA, &viewingSysA, options, attr);
-  rendererB.render(&frameB, &viewingSysB, options, attr);
+  rendererA.render(worldA, &frameA, &viewingSysA, options, attr);
+  rendererB.render(worldB, &frameB, &viewingSysB, options, attr);
 
   check(framesMatch(frameA, frameB, kRepeatRes, kRepeatRes),
         "repeat: two renders of the same scene match bit for bit, colour and alpha");
@@ -511,19 +519,21 @@ void checkCrop() {
   gman::VSPerspective viewingSysCrop(kRepeatRes, kRepeatRes, squareScreenWindow(), identity, 90.0f, 0.5f, 50.0f);
 
   GMANPathtraceRenderer rendererFull;
+  GMANWorld worldFull;
   std::vector<GMANLight const*> lightsFull;
   GMANLight const *l1f, *l2f;
-  buildTwoLightScene(rendererFull, lightsFull, l1f, l2f);
+  buildTwoLightScene(worldFull, lightsFull, l1f, l2f);
 
   GMANPathtraceRenderer rendererCrop;
+  GMANWorld worldCrop;
   std::vector<GMANLight const*> lightsCrop;
   GMANLight const *l1c, *l2c;
-  buildTwoLightScene(rendererCrop, lightsCrop, l1c, l2c);
+  buildTwoLightScene(worldCrop, lightsCrop, l1c, l2c);
 
   GMANOptions const fullOptions = twoLightOptions();
   GMANFrameBuffer frameFull(kRepeatRes, kRepeatRes, fullOptions.getBackground());
   GMANAttributes const attr;
-  rendererFull.render(&frameFull, &viewingSysFull, fullOptions, attr);
+  rendererFull.render(worldFull, &frameFull, &viewingSysFull, fullOptions, attr);
 
   GMANOptions cropOptions = twoLightOptions();
   cropOptions.setCropWindow(0.25f, 0.75f, 0.25f, 0.75f);
@@ -533,7 +543,7 @@ void checkCrop() {
   check(cropWidth > 0 && cropHeight > 0, "crop setup: the crop rectangle has a positive size");
 
   GMANFrameBuffer frameCrop(cropWidth, cropHeight, cropOptions.getBackground());
-  rendererCrop.render(&frameCrop, &viewingSysCrop, cropOptions, attr);
+  rendererCrop.render(worldCrop, &frameCrop, &viewingSysCrop, cropOptions, attr);
 
   bool everyCroppedPixelMatches = true;
   for (int y = 0; y < cropHeight; ++y) {
@@ -568,6 +578,7 @@ void checkNoIndirectPass() {
   gman::VSPerspective viewingSysB(kRepeatRes, kRepeatRes, squareScreenWindow(), identity, 90.0f, 0.5f, 50.0f);
 
   GMANPathtraceRenderer rendererA;
+  GMANWorld worldA;
   auto floorA = buildFloor();
   gman::Appearance appearanceA;
   appearanceA.shader = shader;
@@ -575,13 +586,14 @@ void checkNoIndirectPass() {
   appearanceA.Os = GMANColor(1.0f, 1.0f, 1.0f);
   appearanceA.lights = lights;
   floorA->setAppearance(appearanceA);
-  rendererA.getWorldManager()->add(std::move(floorA));
+  worldA.add(std::move(floorA));
 
   GMANPathtraceRenderer rendererB;
+  GMANWorld worldB;
   auto floorB = buildFloor();
   gman::Appearance appearanceB = appearanceA;
   floorB->setAppearance(appearanceB);
-  rendererB.getWorldManager()->add(std::move(floorB));
+  worldB.add(std::move(floorB));
 
   GMANOptions const withoutPass = twoLightOptions();
   GMANOptions withPass = twoLightOptions();
@@ -589,12 +601,12 @@ void checkNoIndirectPass() {
 
   GMANFrameBuffer frameA(kRepeatRes, kRepeatRes, withoutPass.getBackground());
   GMANAttributes const attr;
-  rendererA.render(&frameA, &viewingSysA, withoutPass, attr);
+  rendererA.render(worldA, &frameA, &viewingSysA, withoutPass, attr);
 
   setLogFile(logPath.c_str());
   setScreenOutput(false);
   GMANFrameBuffer frameB(kRepeatRes, kRepeatRes, withPass.getBackground());
-  rendererB.render(&frameB, &viewingSysB, withPass, attr);
+  rendererB.render(worldB, &frameB, &viewingSysB, withPass, attr);
   setLogFile("/dev/null");
   setScreenOutput(true);
 
@@ -627,6 +639,7 @@ void checkDrops() {
   gman::VSPerspective viewingSys(kRes, kRes, squareScreenWindow(), identity, 90.0f, 0.5f, 50.0f);
 
   GMANPathtraceRenderer renderer;
+  GMANWorld world;
   // zmin above -radius: the sphere's own missing cap opens behind the eye,
   // at negative z, where no camera ray ever looks.
   auto sphere = gman::make<GMANRaySphere>(kSphereRadius, -8.0f, kSphereRadius, 360.0f, GMANParameterList());
@@ -638,7 +651,7 @@ void checkDrops() {
   appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   appearance.lights = {&light};
   sphere->setAppearance(appearance);
-  renderer.getWorldManager()->add(std::move(sphere));
+  world.add(std::move(sphere));
 
   std::string const logPath = "pathtracerframe_drops.log";
   std::remove(logPath.c_str());
@@ -647,7 +660,7 @@ void checkDrops() {
 
   GMANFrameBuffer frameBuffer(kRes, kRes, options.getBackground());
   GMANAttributes const attr;
-  renderer.render(&frameBuffer, &viewingSys, options, attr);
+  renderer.render(world, &frameBuffer, &viewingSys, options, attr);
 
   setLogFile("/dev/null");
   setScreenOutput(true);

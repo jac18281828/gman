@@ -53,6 +53,7 @@
 #include "gmansurfaceshader.h"
 #include "gmanvector.h"
 #include "gmanvsperspective.h"
+#include "gmanworld.h"
 #include "ri.h"
 #include "samplingstats.h"
 
@@ -206,6 +207,7 @@ inline void renderAndCollectResiduals(std::vector<GMANLight const*> const& light
   gman::VSPerspective viewingSys(kRes, kRes, squareScreenWindow(), identity, 90.0f, 0.5f, 50.0f);
 
   GMANPathtraceRenderer renderer;
+  GMANWorld world;
   auto floor = buildFloor();
   gman::Appearance appearance;
   appearance.shader = loadShader("matte", matteParams(1.0f));
@@ -213,11 +215,11 @@ inline void renderAndCollectResiduals(std::vector<GMANLight const*> const& light
   appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   appearance.lights = lights;
   floor->setAppearance(appearance);
-  renderer.getWorldManager()->add(std::move(floor));
+  world.add(std::move(floor));
 
   GMANFrameBuffer frameBuffer(kRes, kRes, options.getBackground());
   GMANAttributes const attr;
-  renderer.render(&frameBuffer, &viewingSys, options, attr);
+  renderer.render(world, &frameBuffer, &viewingSys, options, attr);
   droppedCount = renderer.droppedPathCount();
 
   measuredCount = 0;

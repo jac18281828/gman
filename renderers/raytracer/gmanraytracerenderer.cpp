@@ -61,7 +61,7 @@
 #include "gmantexture.h"
 #include "gmanvector.h"
 #include "gmanviewingsystem.h"
-#include "gmanworldmanager.h"
+#include "gmanworld.h"
 #include "ri.h"
 
 // GMANRayTracer::trace()'s own recursion bound: independent of
@@ -401,7 +401,7 @@ namespace {
 // empty owning pointer when no Option named one. The caller's BVH must
 // already be built into occluder: prepare() may query transmission
 // through it.
-gman::IndirectPassPtr loadAndPrepareIndirectPass(GMANOptions const& options, GMANWorldManager& world,
+gman::IndirectPassPtr loadAndPrepareIndirectPass(GMANOptions const& options, GMANWorld const& world,
                                                  GMANRayOccluder const& occluder) {
   if (options.getIndirectPass().empty()) {
     return {nullptr, [](gman::IndirectPass*) {}};
@@ -433,7 +433,7 @@ std::uint32_t areaLightSamples(GMANOptions const& options) {
 // world's area emitters, with the draw count options names: every emitter
 // gman::emitters enumerates that has a shape. Warns once, through
 // gman::emitters, of each area-light primitive it skips.
-GMANAreaLights areaLightsOf(GMANWorldManager& world, GMANOptions const& options) {
+GMANAreaLights areaLightsOf(GMANWorld const& world, GMANOptions const& options) {
   GMANAreaLights areaLights;
   areaLights.emitters = gman::emitters(world);
   std::erase_if(areaLights.emitters, [](gman::Emitter const& emitter) { return emitter.shape == nullptr; });
@@ -456,22 +456,22 @@ std::vector<GMANRayOccluder> shadingOccludersFor(GMANRayBVH const& bvh, GMANMatr
 
 } // namespace
 
-void GMANRaytraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSystem* viewingSys,
+void GMANRaytraceRenderer::render(GMANWorld const& world, GMANFrameBuffer* frameBuffer, GMANViewingSystem* viewingSys,
                                   GMANOptions const& options, GMANAttributes const& /*attributes*/) {
   // Rebuilt every call, discarding any tree a prior call built: simpler
   // than tracking whether a stale tree needs invalidating, and a render
   // pass over the whole frame already costs far more than one extra tree
   // build.
-  bvh.build(worldManager);
+  bvh.build(world);
 
   // Gathered once per render() call from the same world bvh was built from,
   // so the emitters name primitives the tree holds.
-  GMANAreaLights const areaLights = areaLightsOf(worldManager, options);
+  GMANAreaLights const areaLights = areaLightsOf(world, options);
 
   // Loaded, prepared and released here, once per render() call: a pass
   // kept across calls would answer for a scene that no longer exists,
   // since bvh above is rebuilt every time too.
-  gman::IndirectPassPtr const ownedIndirectPass = loadAndPrepareIndirectPass(options, worldManager, occluder);
+  gman::IndirectPassPtr const ownedIndirectPass = loadAndPrepareIndirectPass(options, world, occluder);
   gman::IndirectPass* const indirectPass = ownedIndirectPass.get();
 
   RtInt const width = frameBuffer->getWidth();
@@ -522,8 +522,6 @@ void GMANRaytraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSyste
 }
 
 void GMANRaytraceRenderer::setWorkers(RtInt workers) { requestedWorkers = workers; }
-
-GMANWorldManager* GMANRaytraceRenderer::getWorldManager(void) { return &worldManager; }
 
 // return its object manager
 GMANPrimitiveFactory* GMANRaytraceRenderer::getPrimitiveFactory(void) { return &primitiveFactory; }

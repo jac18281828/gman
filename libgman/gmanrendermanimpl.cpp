@@ -245,10 +245,7 @@ RtInt saturatedCount(std::int64_t count) { return static_cast<RtInt>(std::clamp<
  */
 
 // default constructor
-GMANRenderManImpl::GMANRenderManImpl() : GMANGraphicState() {
-  primitiveFactory = NULL;
-  worldManager = NULL;
-};
+GMANRenderManImpl::GMANRenderManImpl() : GMANGraphicState() { primitiveFactory = NULL; };
 
 // default destructor
 GMANRenderManImpl::~GMANRenderManImpl() {};
@@ -283,8 +280,6 @@ RtVoid GMANRenderManImpl::RiBegin(RtToken name) {
   objectName += name;
   objectName += ".so";
   renderer = std::make_unique<GMANLoadableRenderer>(objectName.c_str());
-  worldManager = renderer->getWorldManager();
-
   primitiveFactory = renderer->getPrimitiveFactory();
 }
 
@@ -295,9 +290,8 @@ RtVoid GMANRenderManImpl::RiEnd(RtVoid) {
 
 RtVoid GMANRenderManImpl::releaseRenderer() {
   renderer.reset();
-  // worldManager and primitiveFactory belong to renderer, not to this object;
-  // deleting it invalidates them too.
-  worldManager = NULL;
+  // primitiveFactory belongs to renderer, not to this object; deleting it
+  // invalidates it too.
   primitiveFactory = NULL;
   viewingSystem.reset();
 }
@@ -427,7 +421,7 @@ RtVoid GMANRenderManImpl::RiWorldEnd(RtVoid) {
   }
 
   const GMANOptions::ExposureStruct& exposure = getOptions().getExposure();
-  renderer->render(output.get(), viewingSystem.get(), getOptions(), getAttributes());
+  renderer->render(currentWorld, output.get(), viewingSystem.get(), getOptions(), getAttributes());
 
   // renderer must be copied to support depth
   if (dMode != GMANOutput::RGBA) {
@@ -1159,7 +1153,7 @@ RtVoid GMANRenderManImpl::RiPolygonV(RtInt nverts, RtInt n, RtToken tokens[], Rt
 
   GMANTransform transform(getTransform());
 
-  worldManager->add(primitiveFactory->getRSPolygonMesh(*mesh, getOptions(), getAttributes(), transform));
+  currentWorld.add(primitiveFactory->getRSPolygonMesh(*mesh, getOptions(), getAttributes(), transform));
 }
 RtVoid GMANRenderManImpl::RiGeneralPolygonV(RtInt nloops, RtInt nverts[], RtInt n, RtToken tokens[],
                                             RtPointer parms[]) {
@@ -1183,7 +1177,7 @@ RtVoid GMANRenderManImpl::RiGeneralPolygonV(RtInt nloops, RtInt nverts[], RtInt 
 
   GMANTransform transform(getTransform());
 
-  worldManager->add(primitiveFactory->getRSPolygonMesh(*mesh, getOptions(), getAttributes(), transform));
+  currentWorld.add(primitiveFactory->getRSPolygonMesh(*mesh, getOptions(), getAttributes(), transform));
 }
 RtVoid GMANRenderManImpl::RiPointsPolygonsV(RtInt npolys, RtInt nverts[], RtInt verts[], RtInt n, RtToken tokens[],
                                             RtPointer parms[]) {
@@ -1207,7 +1201,7 @@ RtVoid GMANRenderManImpl::RiPointsPolygonsV(RtInt npolys, RtInt nverts[], RtInt 
 
   GMANTransform transform(getTransform());
 
-  worldManager->add(primitiveFactory->getRSPolygonMesh(*mesh, getOptions(), getAttributes(), transform));
+  currentWorld.add(primitiveFactory->getRSPolygonMesh(*mesh, getOptions(), getAttributes(), transform));
 }
 RtVoid GMANRenderManImpl::RiPointsGeneralPolygonsV(RtInt npolys, RtInt nloops[], RtInt nverts[], RtInt verts[], RtInt n,
                                                    RtToken tokens[], RtPointer parms[]) {
@@ -1231,7 +1225,7 @@ RtVoid GMANRenderManImpl::RiPointsGeneralPolygonsV(RtInt npolys, RtInt nloops[],
 
   GMANTransform transform(getTransform());
 
-  worldManager->add(primitiveFactory->getRSPolygonMesh(*mesh, getOptions(), getAttributes(), transform));
+  currentWorld.add(primitiveFactory->getRSPolygonMesh(*mesh, getOptions(), getAttributes(), transform));
 }
 RtVoid GMANRenderManImpl::RiPatchV(RtToken type, RtInt n, RtToken tokens[], RtPointer parms[]) {
   RiPatchV(type, n, tokens, parms, NULL);
@@ -1254,7 +1248,7 @@ RtVoid GMANRenderManImpl::RiPatchV(RtToken type, RtInt n, RtToken tokens[], RtPo
 
   GMANTransform transform(getTransform());
 
-  worldManager->add(primitiveFactory->getRSPatch(type, paramList, getOptions(), getAttributes(), transform));
+  currentWorld.add(primitiveFactory->getRSPatch(type, paramList, getOptions(), getAttributes(), transform));
 }
 RtVoid GMANRenderManImpl::RiPatchMeshV(RtToken type, RtInt nu, RtToken uwrap, RtInt nv, RtToken vwrap, RtInt n,
                                        RtToken tokens[], RtPointer parms[]) {
@@ -1328,8 +1322,8 @@ RtVoid GMANRenderManImpl::RiPatchMeshV(RtToken type, RtInt nu, RtToken uwrap, Rt
 
   GMANTransform transform(getTransform());
 
-  worldManager->add(primitiveFactory->getRSPatchMesh(type, nu, uwrap, nv, vwrap, paramList, getOptions(),
-                                                     getAttributes(), transform));
+  currentWorld.add(primitiveFactory->getRSPatchMesh(type, nu, uwrap, nv, vwrap, paramList, getOptions(),
+                                                    getAttributes(), transform));
 }
 namespace {
 
@@ -1475,8 +1469,8 @@ RtVoid GMANRenderManImpl::RiNuPatchV(RtInt nu, RtInt uorder, RtFloat uknot[], Rt
 
   GMANTransform transform(getTransform());
 
-  worldManager->add(primitiveFactory->getRSNuPatch(nu, uorder, uknot, umin, umax, nv, vorder, vknot, vmin, vmax,
-                                                   paramList, getOptions(), getAttributes(), transform));
+  currentWorld.add(primitiveFactory->getRSNuPatch(nu, uorder, uknot, umin, umax, nv, vorder, vknot, vmin, vmax,
+                                                  paramList, getOptions(), getAttributes(), transform));
 }
 
 RtVoid GMANRenderManImpl::RiSphereV(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, RtInt n, RtToken tokens[],
@@ -1496,7 +1490,7 @@ RtVoid GMANRenderManImpl::RiSphereV(RtFloat radius, RtFloat zmin, RtFloat zmax, 
 
   GMANTransform transform(getTransform());
 
-  worldManager->add(
+  currentWorld.add(
       primitiveFactory->getRSSphere(radius, zmin, zmax, tmax, paramList, getOptions(), getAttributes(), transform));
 }
 RtVoid GMANRenderManImpl::RiConeV(RtFloat height, RtFloat radius, RtFloat tmax, RtInt n, RtToken tokens[],
@@ -1516,7 +1510,7 @@ RtVoid GMANRenderManImpl::RiConeV(RtFloat height, RtFloat radius, RtFloat tmax, 
 
   GMANTransform transform(getTransform());
 
-  worldManager->add(
+  currentWorld.add(
       primitiveFactory->getRSCone(height, radius, tmax, paramList, getOptions(), getAttributes(), transform));
 }
 RtVoid GMANRenderManImpl::RiCylinderV(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, RtInt n,
@@ -1536,7 +1530,7 @@ RtVoid GMANRenderManImpl::RiCylinderV(RtFloat radius, RtFloat zmin, RtFloat zmax
 
   GMANTransform transform(getTransform());
 
-  worldManager->add(
+  currentWorld.add(
       primitiveFactory->getRSCylinder(radius, zmin, zmax, tmax, paramList, getOptions(), getAttributes(), transform));
 }
 RtVoid GMANRenderManImpl::RiHyperboloidV(RtPoint point1, RtPoint point2, RtFloat tmax, RtInt n, RtToken tokens[],
@@ -1556,7 +1550,7 @@ RtVoid GMANRenderManImpl::RiHyperboloidV(RtPoint point1, RtPoint point2, RtFloat
 
   GMANTransform transform(getTransform());
 
-  worldManager->add(
+  currentWorld.add(
       primitiveFactory->getRSHyperboloid(point1, point2, tmax, paramList, getOptions(), getAttributes(), transform));
 }
 RtVoid GMANRenderManImpl::RiParaboloidV(RtFloat rmax, RtFloat zmin, RtFloat zmax, RtFloat tmax, RtInt n,
@@ -1576,7 +1570,7 @@ RtVoid GMANRenderManImpl::RiParaboloidV(RtFloat rmax, RtFloat zmin, RtFloat zmax
 
   GMANTransform transform(getTransform());
 
-  worldManager->add(
+  currentWorld.add(
       primitiveFactory->getRSParaboloid(rmax, zmin, zmax, tmax, paramList, getOptions(), getAttributes(), transform));
 }
 RtVoid GMANRenderManImpl::RiDiskV(RtFloat height, RtFloat radius, RtFloat tmax, RtInt n, RtToken tokens[],
@@ -1596,7 +1590,7 @@ RtVoid GMANRenderManImpl::RiDiskV(RtFloat height, RtFloat radius, RtFloat tmax, 
 
   GMANTransform transform(getTransform());
 
-  worldManager->add(
+  currentWorld.add(
       primitiveFactory->getRSDisk(height, radius, tmax, paramList, getOptions(), getAttributes(), transform));
 }
 RtVoid GMANRenderManImpl::RiTorusV(RtFloat majrad, RtFloat minrad, RtFloat phimin, RtFloat phimax, RtFloat tmax,
@@ -1616,8 +1610,8 @@ RtVoid GMANRenderManImpl::RiTorusV(RtFloat majrad, RtFloat minrad, RtFloat phimi
 
   GMANTransform transform(getTransform());
 
-  worldManager->add(primitiveFactory->getRSTorus(majrad, minrad, phimin, phimax, tmax, paramList, getOptions(),
-                                                 getAttributes(), transform));
+  currentWorld.add(primitiveFactory->getRSTorus(majrad, minrad, phimin, phimax, tmax, paramList, getOptions(),
+                                                getAttributes(), transform));
 }
 
 RtVoid GMANRenderManImpl::RiBlobbyV(RtInt /*nleaf*/, RtInt /*ncode*/, RtInt /*code*/[], RtInt /*nflt*/,

@@ -37,12 +37,12 @@
 #include "gmancolor.h"
 #include "gmanemitter.h"
 #include "gmanlightsourcemgr.h"
-#include "gmanlinearworldmanager.h"
 #include "gmanpoint.h"
 #include "gmanraypolygon.h"
 #include "gmanraypolygonmesh.h"
 #include "gmanshading.h"
 #include "gmanvector.h"
+#include "gmanworld.h"
 #include "ri.h"
 
 namespace taggedmesh {
@@ -95,7 +95,7 @@ inline std::unique_ptr<GMANRayPolygonMesh> buildTaggedMesh(std::vector<FaceSpec>
 // owns the mesh, which owns its faces; the light outlives neither.
 struct MeshWorld {
   GMANLight light;
-  GMANLinearWorldManager world;
+  GMANWorld world;
   GMANRayPolygonMesh const* mesh = nullptr;
 
   explicit MeshWorld(std::vector<FaceSpec> const& specs, GMANColor const& radiance = GMANColor(4.0f, 4.0f, 4.0f))

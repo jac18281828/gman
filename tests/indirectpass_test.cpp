@@ -36,13 +36,13 @@
 #include "check.h"
 #include "constantindirectconstants.h"
 #include "gmanindirectpass.h"
-#include "gmanlinearworldmanager.h"
 #include "gmanlog.h"
 #include "gmanowned.h"
 #include "gmanparameterlist.h"
 #include "gmanraybvh.h"
 #include "gmanrayoccluder.h"
 #include "gmanraysphere.h"
+#include "gmanworld.h"
 #include "maketransform.h"
 #include "ri.h"
 
@@ -72,7 +72,7 @@ bool isConstant(GMANColor const& c) {
 
 // Adds the one sphere prepare() needs to see before constantindirect stops
 // answering black.
-void buildOneSphereWorld(GMANLinearWorldManager& world) {
+void buildOneSphereWorld(GMANWorld& world) {
   GMANMatrix4 place;
   GMANTransform const transform = makeTransform(place);
   world.add(gman::make<GMANRaySphere>(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList(), transform));
@@ -99,7 +99,7 @@ void checkLoadAndPrepare() {
   GMANVector const I(0.0f, 0.0f, -1.0f);
   check(isBlack(pass->irradiance(hit, I)), "before prepare(): irradiance() answers black");
 
-  GMANLinearWorldManager world;
+  GMANWorld world;
   buildOneSphereWorld(world);
   GMANRayBVH bvh;
   bvh.build(world);
@@ -165,7 +165,7 @@ void checkReloadAfterRelease() {
   GMANVector const I(0.0f, 0.0f, -1.0f);
   check(isBlack(second->irradiance(hit, I)), "reload: the second instance answers black before its own prepare()");
 
-  GMANLinearWorldManager world;
+  GMANWorld world;
   buildOneSphereWorld(world);
   GMANRayBVH bvh;
   bvh.build(world);

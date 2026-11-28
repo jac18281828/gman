@@ -43,7 +43,6 @@
 
 #include "check.h"
 #include "gmanlightsourcemgr.h"
-#include "gmanlinearworldmanager.h"
 #include "gmanmatrix4.h"
 #include "gmanowned.h"
 #include "gmanparameterlist.h"
@@ -52,6 +51,7 @@
 #include "gmanraypolygon.h"
 #include "gmanraysphere.h"
 #include "gmanvector.h"
+#include "gmanworld.h"
 #include "maketransform.h"
 #include "ri.h"
 
@@ -127,32 +127,32 @@ void checkSmallReceiver() {
               (double)M, (double)g, (double)oldOffset, (double)newOffset, (double)Ng.dot(towardLight));
 
   {
-    GMANLinearWorldManager worldManager;
-    worldManager.add(std::move(receiver));
-    worldManager.add(squareAt(maxP + g, 1.0f));
+    GMANWorld world;
+    world.add(std::move(receiver));
+    world.add(squareAt(maxP + g, 1.0f));
     GMANRayBVH bvh;
-    bvh.build(worldManager);
+    bvh.build(world);
     GMANRayOccluder const occluder(bvh);
     GMANColor const result = occluder.transmission(light, hitPoint, towardLight, Ng, RI_INFINITY, magnitude);
     check(isBlack(result), "small receiver: transmission returns black at the contact gap");
   }
   {
     auto alone = sphereAt(maxP, 0.0f);
-    GMANLinearWorldManager worldManager;
-    worldManager.add(std::move(alone));
+    GMANWorld world;
+    world.add(std::move(alone));
     GMANRayBVH bvh;
-    bvh.build(worldManager);
+    bvh.build(world);
     GMANRayOccluder const occluder(bvh);
     GMANColor const result = occluder.transmission(light, hitPoint, towardLight, Ng, RI_INFINITY, magnitude);
     check(isWhite(result), "small receiver: with no blocker, the same point returns white");
   }
   {
     auto alone = sphereAt(maxP, 0.0f);
-    GMANLinearWorldManager worldManager;
-    worldManager.add(std::move(alone));
-    worldManager.add(squareAt(maxP + 4.0f * kCeiling * maxP, 1.0f));
+    GMANWorld world;
+    world.add(std::move(alone));
+    world.add(squareAt(maxP + 4.0f * kCeiling * maxP, 1.0f));
     GMANRayBVH bvh;
-    bvh.build(worldManager);
+    bvh.build(world);
     GMANRayOccluder const occluder(bvh);
     GMANColor const result = occluder.transmission(light, hitPoint, towardLight, Ng, RI_INFINITY, magnitude);
     check(isBlack(result), "small receiver: a blocker at 4*kCeiling*max|P| still transmits black");
@@ -190,11 +190,11 @@ void checkLargeReceiver() {
               (double)maxP, (double)M, (double)g, (double)uncappedOffset, (double)newOffset,
               (double)Ng.dot(towardLight));
 
-  GMANLinearWorldManager worldManager;
-  worldManager.add(std::move(receiver));
-  worldManager.add(squareAt(maxP - g, 1.0f));
+  GMANWorld world;
+  world.add(std::move(receiver));
+  world.add(squareAt(maxP - g, 1.0f));
   GMANRayBVH bvh;
-  bvh.build(worldManager);
+  bvh.build(world);
   GMANRayOccluder const occluder(bvh);
   GMANColor const result = occluder.transmission(light, hitPoint, towardLight, Ng, RI_INFINITY, magnitude);
   check(isBlack(result), "large receiver: transmission returns black -- the ceiling keeps its own contact");

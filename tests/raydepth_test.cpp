@@ -49,6 +49,7 @@
 #include "gmantransform.h"
 #include "gmanvector.h"
 #include "gmanvsperspective.h"
+#include "gmanworld.h"
 #include "maketransform.h"
 #include "ri.h"
 
@@ -66,7 +67,7 @@ GMANOptions::ScreenWindowStruct squareScreenWindow() {
   return sw;
 }
 
-GMANPrimitive* addSphereAt(GMANRaytraceRenderer& renderer, GMANOptions& options, GMANAttributes& attr,
+GMANPrimitive* addSphereAt(GMANRaytraceRenderer& renderer, GMANWorld& world, GMANOptions& options, GMANAttributes& attr,
                            RtFloat centreZ) {
   GMANMatrix4 place;
   place.trans(0.0, 0.0, centreZ);
@@ -74,7 +75,7 @@ GMANPrimitive* addSphereAt(GMANRaytraceRenderer& renderer, GMANOptions& options,
   auto sphereOwner =
       renderer.getPrimitiveFactory()->getRSSphere(1.0, -1.0, 1.0, 360.0, GMANParameterList(), options, attr, transform);
   auto* const sphere = sphereOwner.get();
-  renderer.getWorldManager()->add(std::move(sphereOwner));
+  world.add(std::move(sphereOwner));
   return sphere;
 }
 
@@ -91,15 +92,16 @@ void testNearerOverlappingSphereWins() {
   gman::VSPerspective viewingSys(kRes, kRes, squareScreenWindow(), identity, 90.0, 0.5, 50.0);
 
   GMANRaytraceRenderer renderer;
+  GMANWorld world;
   GMANAttributes attr;
   // Near sphere occupies camera-space z in [4, 6]; far sphere [4.8, 6.8].
   // They overlap in [4.8, 6], so a farther-wins comparison still reports a
   // hit -- the wrong one -- rather than failing to hit at all.
-  addSphereAt(renderer, options, attr, 5.0);
-  addSphereAt(renderer, options, attr, 5.8);
+  addSphereAt(renderer, world, options, attr, 5.0);
+  addSphereAt(renderer, world, options, attr, 5.8);
 
   GMANFrameBuffer frameBuffer(kRes, kRes, options.getBackground());
-  renderer.render(&frameBuffer, &viewingSys, options, attr);
+  renderer.render(world, &frameBuffer, &viewingSys, options, attr);
 
   RtFloat const centreDepth = renderer.getDepth(kRes / 2, kRes / 2);
   check(std::fabs(centreDepth - 4.0) <= kTolerance,
@@ -123,11 +125,12 @@ void testOffAxisDepthIsCameraSpaceZ() {
   gman::VSPerspective viewingSys(kRes, kRes, squareScreenWindow(), identity, 90.0, 0.5, 50.0);
 
   GMANRaytraceRenderer renderer;
+  GMANWorld world;
   GMANAttributes attr;
-  addSphereAt(renderer, options, attr, 5.0);
+  addSphereAt(renderer, world, options, attr, 5.0);
 
   GMANFrameBuffer frameBuffer(kRes, kRes, options.getBackground());
-  renderer.render(&frameBuffer, &viewingSys, options, attr);
+  renderer.render(world, &frameBuffer, &viewingSys, options, attr);
 
   int const px = kRes / 2 + 3;
   int const py = kRes / 2;
@@ -172,6 +175,8 @@ int main() {
 
   GMANRaytraceRenderer renderer;
 
+  GMANWorld world;
+
   GMANMatrix4 place;
   place.trans(0.0, 0.0, 5.0);
   GMANTransform transform = makeTransform(place);
@@ -179,10 +184,10 @@ int main() {
   GMANAttributes attr;
   auto sphere =
       renderer.getPrimitiveFactory()->getRSSphere(1.0, -1.0, 1.0, 360.0, GMANParameterList(), options, attr, transform);
-  renderer.getWorldManager()->add(std::move(sphere));
+  world.add(std::move(sphere));
 
   GMANFrameBuffer frameBuffer(kRes, kRes, options.getBackground());
-  renderer.render(&frameBuffer, &viewingSys, options, attr);
+  renderer.render(world, &frameBuffer, &viewingSys, options, attr);
 
   RtFloat const centreDepth = renderer.getDepth(kRes / 2, kRes / 2);
   check(std::fabs(centreDepth - 4.0) <= kTolerance, "depth: the centre sample pins getDepth to 4.0");

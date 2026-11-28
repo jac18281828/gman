@@ -76,6 +76,7 @@
 #include "gmantransform.h"
 #include "gmanvector.h"
 #include "gmanvsperspective.h"
+#include "gmanworld.h"
 #include "maketransform.h"
 #include "pathtracerarealightscene.h"
 #include "pathtracerscene.h"
@@ -199,6 +200,7 @@ public:
   GMANMatrix4 const identity;
   gman::VSPerspective viewingSys;
   GMANPathtraceRenderer renderer;
+  GMANWorld world;
 
   explicit FloorScene(Lighting lighting, Winding winding = Winding::forward,
                       std::shared_ptr<GMANSurfaceShader const> shader = nullptr)
@@ -223,7 +225,7 @@ public:
       appearance.lights = {&distantLight};
     }
     floor->setAppearance(appearance);
-    renderer.getWorldManager()->add(std::move(floor));
+    world.add(std::move(floor));
     if (lighting == Lighting::emittingDisk) {
       addEmittingDisk();
     }
@@ -245,7 +247,7 @@ public:
     GMANFrameBuffer frameBuffer(kWidth, kHeight, GMANColor(0.0f, 0.0f, 0.0f));
     GMANAttributes const attributes;
     beginLogCapture(kRenderLog);
-    renderer.render(&frameBuffer, &viewingSys, options, attributes);
+    renderer.render(world, &frameBuffer, &viewingSys, options, attributes);
     Frame frame;
     frame.log = endLogCapture(kRenderLog);
     frame.guided = renderer.guidedImage();
@@ -278,7 +280,7 @@ private:
     appearance.areaLight = &areaLight;
     appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
     disk->setAppearance(appearance);
-    renderer.getWorldManager()->add(std::move(disk));
+    world.add(std::move(disk));
   }
 };
 

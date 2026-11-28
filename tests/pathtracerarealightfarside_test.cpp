@@ -45,6 +45,7 @@
 #include "gmantransform.h"
 #include "gmanvector.h"
 #include "gmanvsperspective.h"
+#include "gmanworld.h"
 #include "pathtracerarealightscene.h"
 #include "pathtracerscene.h"
 #include "ri.h"
@@ -110,13 +111,14 @@ void testFarSideOfPreviewPoint() {
   gman::VSPerspective viewingSys(kFloorRes, kFloorRes, squareScreenWindow(), identity, 90.0f, 0.5f, 50.0f);
 
   GMANPathtraceRenderer renderer;
+  GMANWorld world;
   auto floor = buildFloor();
   gman::Appearance floorAppearance;
   floorAppearance.shader = loadShader("matte", matteParams(1.0f));
   floorAppearance.Cs = GMANColor(0.5f, 0.5f, 0.5f);
   floorAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   floor->setAppearance(floorAppearance);
-  renderer.getWorldManager()->add(std::move(floor));
+  world.add(std::move(floor));
 
   GMANMatrix4 place;
   place.trans(kFarSideCentreX, kFarSideCentreY, kFarSideCentreZ);
@@ -128,11 +130,11 @@ void testFarSideOfPreviewPoint() {
   sphereAppearance.areaLight = &areaLight;
   sphereAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   sphere->setAppearance(sphereAppearance);
-  renderer.getWorldManager()->add(std::move(sphere));
+  world.add(std::move(sphere));
 
   GMANFrameBuffer frameBuffer(kFloorRes, kFloorRes, options.getBackground());
   GMANAttributes const attr;
-  renderer.render(&frameBuffer, &viewingSys, options, attr);
+  renderer.render(world, &frameBuffer, &viewingSys, options, attr);
   check(renderer.droppedPathCount() == 0, "far side of the preview point: droppedPathCount() is 0");
 
   std::vector<double> residuals[3];

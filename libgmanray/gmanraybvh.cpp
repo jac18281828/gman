@@ -31,14 +31,13 @@
 #include "gmanlog.h"
 #include "gmanmath.h"
 #include "gmanpoint.h"
-#include "gmanprimitive.h"
 #include "gmanray.h"
 #include "gmanraybbox.h"
 #include "gmanraybvh.h"
 #include "gmanraypolygonmesh.h"
 #include "gmanrayprimitive.h"
 #include "gmanvector.h"
-#include "gmanworldmanager.h"
+#include "gmanworld.h"
 #include "ri.h"
 
 namespace {
@@ -193,7 +192,7 @@ bool GMANRayBVH::Search::entersBox(PreparedRay const& ray, Node const& node, RtF
   return ray.overlaps(node, limit(ray), entry);
 }
 
-void GMANRayBVH::build(GMANWorldManager& worldManager) {
+void GMANRayBVH::build(GMANWorld const& world) {
   primitives.clear();
   nodes.clear();
   rootIndex = -1;
@@ -219,11 +218,11 @@ void GMANRayBVH::build(GMANWorldManager& worldManager) {
     primitives.push_back(entry);
   };
 
-  for (GMANPrimitive* primitive = worldManager.getFirst(); primitive; primitive = worldManager.getNext()) {
+  for (auto const& primitive : world.ofType<GMANRayPrimitive>()) {
     // A mesh contributes each of its own faces as its own entry in place
     // of itself: a house-sized mesh then culls per face, at no cost to the
     // exported interface, which still sees one primitive per request.
-    GMANRayPolygonMesh const* mesh = dynamic_cast<GMANRayPolygonMesh const*>(primitive);
+    GMANRayPolygonMesh const* mesh = dynamic_cast<GMANRayPolygonMesh const*>(&primitive);
     if (mesh) {
       for (std::size_t i = 0; i < mesh->getFaceCount(); ++i) {
         addEntry(&mesh->getFace(i));
@@ -231,11 +230,7 @@ void GMANRayBVH::build(GMANWorldManager& worldManager) {
       continue;
     }
 
-    GMANRayPrimitive const* rayPrimitive = dynamic_cast<GMANRayPrimitive const*>(primitive);
-    if (!rayPrimitive) {
-      continue;
-    }
-    addEntry(rayPrimitive);
+    addEntry(&primitive);
   }
 
   if (nanBoxCount > 0) {

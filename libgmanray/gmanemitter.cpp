@@ -50,7 +50,7 @@
 #include "gmanraysphere.h"
 #include "gmanshading.h"
 #include "gmanvector.h"
-#include "gmanworldmanager.h"
+#include "gmanworld.h"
 #include "ri.h"
 
 namespace gman {
@@ -1235,18 +1235,14 @@ std::optional<RtFloat> areaEmitterPower(GMANRayPrimitive const& shape, GMANLight
 
 } // namespace
 
-std::vector<Emitter> emitters(GMANWorldManager& world, std::size_t* ambientCount) {
+std::vector<Emitter> emitters(GMANWorld const& world, std::size_t* ambientCount) {
   std::vector<Emitter> result;
   std::vector<GMANLight const*> deltaSeen;
   std::vector<GMANLight const*> ambientSeen;
   auto ineligibleCount = std::size_t{0};
 
-  for (auto* primitive = world.getFirst(); primitive != nullptr; primitive = world.getNext()) {
-    auto const* rayPrimitive = dynamic_cast<GMANRayPrimitive const*>(primitive);
-    if (rayPrimitive == nullptr) {
-      continue;
-    }
-    auto const& appearance = rayPrimitive->getAppearance();
+  for (auto const& primitive : world.ofType<GMANRayPrimitive>()) {
+    auto const& appearance = primitive.getAppearance();
 
     for (auto const* light : appearance.lights) {
       if (light->getType() == GMAN_LIGHT_AMBIENT) {
@@ -1264,12 +1260,12 @@ std::vector<Emitter> emitters(GMANWorldManager& world, std::size_t* ambientCount
     if (appearance.areaLight == nullptr) {
       continue;
     }
-    const auto power = areaEmitterPower(*rayPrimitive, *appearance.areaLight);
+    const auto power = areaEmitterPower(primitive, *appearance.areaLight);
     if (!power) {
       ++ineligibleCount;
       continue;
     }
-    result.push_back({appearance.areaLight, rayPrimitive, *power});
+    result.push_back({appearance.areaLight, &primitive, *power});
   }
 
   if (ambientCount != nullptr) {

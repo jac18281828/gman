@@ -47,7 +47,6 @@
 #include "gmanbsdf.h"
 #include "gmancolor.h"
 #include "gmanlightsourcemgr.h"
-#include "gmanlinearworldmanager.h"
 #include "gmanmath.h"
 #include "gmanmatrix4.h"
 #include "gmanowned.h"
@@ -62,6 +61,7 @@
 #include "gmantexture.h"
 #include "gmantransform.h"
 #include "gmanvector.h"
+#include "gmanworld.h"
 #include "maketransform.h"
 #include "ri.h"
 
@@ -130,10 +130,10 @@ GMANColor walkThroughCentre(GMANRayOccluder const& occluder) {
 // ---- a shading occluder composites each blocker's shader-evaluated factor ----
 void testShadingOccluderMultipliesTwoCrossings() {
   DielectricShader const shader;
-  GMANLinearWorldManager worldManager;
-  worldManager.add(sphereWith(shadedAppearance(shader)));
+  GMANWorld world;
+  world.add(sphereWith(shadedAppearance(shader)));
   GMANRayBVH bvh;
-  bvh.build(worldManager);
+  bvh.build(world);
   gman::TextureCache textureCache;
   GMANRayOccluder const occluder(bvh, GMANMatrix4(), textureCache);
 
@@ -150,10 +150,10 @@ void testShadingOccluderMultipliesTwoCrossings() {
 void testBvhOnlyOccluderIgnoresTheShader() {
   DielectricShader const shader;
   {
-    GMANLinearWorldManager worldManager;
-    worldManager.add(sphereWith(shadedAppearance(shader)));
+    GMANWorld world;
+    world.add(sphereWith(shadedAppearance(shader)));
     GMANRayBVH bvh;
-    bvh.build(worldManager);
+    bvh.build(world);
     GMANRayOccluder const occluder(bvh);
 
     GMANColor const result = walkThroughCentre(occluder);
@@ -164,10 +164,10 @@ void testBvhOnlyOccluderIgnoresTheShader() {
   {
     gman::Appearance partial = shadedAppearance(shader);
     partial.Os = GMANColor(0.5f, 0.25f, 0.0f);
-    GMANLinearWorldManager worldManager;
-    worldManager.add(sphereWith(partial));
+    GMANWorld world;
+    world.add(sphereWith(partial));
     GMANRayBVH bvh;
-    bvh.build(worldManager);
+    bvh.build(world);
     GMANRayOccluder const occluder(bvh);
 
     GMANColor const result = walkThroughCentre(occluder);
@@ -178,10 +178,10 @@ void testBvhOnlyOccluderIgnoresTheShader() {
 
 // ---- a shading occluder still blocks an opaque null-shader sphere ----
 void testShadingOccluderBlocksOpaqueNullShader() {
-  GMANLinearWorldManager worldManager;
-  worldManager.add(sphereAt(1.0f, 0.0f, 0.0f, 0.0f));
+  GMANWorld world;
+  world.add(sphereAt(1.0f, 0.0f, 0.0f, 0.0f));
   GMANRayBVH bvh;
-  bvh.build(worldManager);
+  bvh.build(world);
   gman::TextureCache textureCache;
   GMANRayOccluder const occluder(bvh, GMANMatrix4(), textureCache);
 
@@ -200,12 +200,12 @@ void testPointLightDistanceBoundsTheShadowRay() {
   towardLight.normalize();
 
   {
-    // GMANLinearWorldManager owns what it holds and destroys it with itself,
+    // GMANWorld owns what it holds and destroys it with itself,
     // so no primitive is deleted here.
-    GMANLinearWorldManager worldManager;
-    worldManager.add(sphereAt(1.0f, 0.0f, 0.0f, 15.0f)); // beyond the light
+    GMANWorld world;
+    world.add(sphereAt(1.0f, 0.0f, 0.0f, 15.0f)); // beyond the light
     GMANRayBVH bvh;
-    bvh.build(worldManager);
+    bvh.build(world);
     GMANRayOccluder const occluder(bvh);
 
     // P is a free-space point, not on any primitive: Ng is the zero
@@ -217,10 +217,10 @@ void testPointLightDistanceBoundsTheShadowRay() {
   }
 
   {
-    GMANLinearWorldManager worldManager;
-    worldManager.add(sphereAt(1.0f, 0.0f, 0.0f, 5.0f)); // between P and the light
+    GMANWorld world;
+    world.add(sphereAt(1.0f, 0.0f, 0.0f, 5.0f)); // between P and the light
     GMANRayBVH bvh;
-    bvh.build(worldManager);
+    bvh.build(world);
     GMANRayOccluder const occluder(bvh);
 
     GMANColor const result = occluder.transmission(light, P, towardLight, GMANVector(), distance, 0.0f);
@@ -238,14 +238,14 @@ void testPointLightDistanceBoundsTheShadowRay() {
 // hit points carry that scale's coordinate magnitude, the way a scaled
 // RIB scene would.
 void testSelfShadowAtScale(RtFloat scale) {
-  GMANLinearWorldManager worldManager;
-  // sphereAt returns an owner that worldManager takes over; the world destroys
+  GMANWorld world;
+  // sphereAt returns an owner that world takes over; the world destroys
   // the sphere with itself.
   auto sphereOwner = sphereAt(scale, 0.0f, 0.0f, 0.0f);
   auto* const sphere = sphereOwner.get();
-  worldManager.add(std::move(sphereOwner));
+  world.add(std::move(sphereOwner));
   GMANRayBVH bvh;
-  bvh.build(worldManager);
+  bvh.build(world);
   GMANRayOccluder const occluder(bvh);
 
   GMANVector lightDir(1.0f, 0.6f, 0.3f); // off-axis, so many samples graze
@@ -306,10 +306,10 @@ void testBlockerRelightsAtScale(RtFloat scale) {
   RtFloat const distance = towardLight.magnitude();
   towardLight.normalize();
 
-  GMANLinearWorldManager worldManager;
-  worldManager.add(sphereAt(scale, 0.4f * scale, 0.0f, 5.0f * scale)); // between P and the light, off-axis
+  GMANWorld world;
+  world.add(sphereAt(scale, 0.4f * scale, 0.0f, 5.0f * scale)); // between P and the light, off-axis
   GMANRayBVH bvh;
-  bvh.build(worldManager);
+  bvh.build(world);
   GMANRayOccluder const occluder(bvh);
 
   // P is a free-space point, not on any primitive -- Ng is the zero vector

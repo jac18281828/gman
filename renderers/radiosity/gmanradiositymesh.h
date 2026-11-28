@@ -31,7 +31,7 @@
 #include "gmanpoint.h"
 #include "gmanray.h"
 #include "gmanvector.h"
-#include "gmanworldmanager.h"
+#include "gmanworld.h"
 #include "ri.h"
 
 class GMANParametric;
@@ -79,14 +79,14 @@ struct GMANRadiositySurfacePoint {
 };
 
 /*
- * Dices every ray primitive a world manager holds into a camera-space
+ * Dices every ray primitive a world holds into a camera-space
  * element mesh for a radiosity solver, and locates the element and corner
  * weights under any hit against one. Not GMAN_EXPORT: a test compiles
  * this object library's own sources directly rather than linking an
  * installed one, GMANRayTracer's own reason (renderers/raytracer/
  * gmanraytracerenderer.h).
  *
- * build() walks worldManager once (getFirst()/getNext()), dicing each
+ * build() walks the world once, dicing each
  * primitive that is one of the seven quadric GMANRayPrimitive classes, a
  * GMANRayPolygon, or a GMANRayPolygonMesh. A mesh dices face by face,
  * through its own getFaceCount()/getFace(); each face is keyed for
@@ -145,7 +145,7 @@ public:
   GMANRadiosityMesh(GMANRadiosityMesh&&) noexcept;
   GMANRadiosityMesh& operator=(GMANRadiosityMesh&&) noexcept;
 
-  void build(GMANWorldManager& worldManager, RtFloat maxEdgeLength);
+  void build(GMANWorld const& world, RtFloat maxEdgeLength);
 
   std::size_t getNodeCount() const { return nodes.size(); }
   std::size_t getElementCount() const { return elements.size(); }
@@ -211,9 +211,9 @@ private:
   // Dices primitive, already known to be one of the nine diceable
   // classes; returns false on the one further way it can still fail (a
   // quadric whose placement will not invert).
-  bool diceOne(GMANPrimitive* primitive, RtFloat maxEdgeLength);
+  bool diceOne(GMANPrimitive const* primitive, RtFloat maxEdgeLength);
 
-  void diceParametric(GMANPrimitive* primitive, GMANParametric& parametric,
+  void diceParametric(GMANPrimitive const* primitive, GMANParametric const& parametric,
                       gman::InvertibleMatrix const& objectToCamera, RtFloat maxEdgeLength);
 
   // Appends a parametric primitive's own nu x nv facet elements over its

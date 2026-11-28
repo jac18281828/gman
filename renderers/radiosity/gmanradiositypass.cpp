@@ -33,7 +33,6 @@
 #include "gmanmatrix4.h"
 #include "gmanoptions.h"
 #include "gmanpoint.h"
-#include "gmanprimitive.h"
 #include "gmanradiositymesh.h"
 #include "gmanradiositypass.h"
 #include "gmanradiositysolver.h"
@@ -42,7 +41,7 @@
 #include "gmanrayoccluder.h"
 #include "gmanrayprimitive.h"
 #include "gmanshading.h"
-#include "gmanworldmanager.h"
+#include "gmanworld.h"
 #include "ri.h"
 
 namespace {
@@ -73,17 +72,16 @@ bool isFiniteBBox(GMANBBox const& bbox) {
 
 // The largest side of the box bounding every finite-bounded primitive in
 // world, divided by kDefaultElementDivisions; 0 with no such primitive.
-RtFloat defaultElementSize(GMANWorldManager& world) {
+RtFloat defaultElementSize(GMANWorld const& world) {
   bool any = false;
   GMANPoint boxMin;
   GMANPoint boxMax;
-  for (GMANPrimitive* primitive = world.getFirst(); primitive != nullptr; primitive = world.getNext()) {
-    auto const* rayPrimitive = dynamic_cast<GMANRayPrimitive const*>(primitive);
-    if (rayPrimitive == nullptr || !isFiniteBBox(rayPrimitive->getBBox())) {
+  for (auto const& primitive : world.ofType<GMANRayPrimitive>()) {
+    if (!isFiniteBBox(primitive.getBBox())) {
       continue;
     }
-    GMANPoint const lo = rayPrimitive->getBBox().getMin();
-    GMANPoint const hi = rayPrimitive->getBBox().getMax();
+    GMANPoint const lo = primitive.getBBox().getMin();
+    GMANPoint const hi = primitive.getBBox().getMax();
     if (!any) {
       boxMin = lo;
       boxMax = hi;
@@ -106,7 +104,7 @@ RtFloat defaultElementSize(GMANWorldManager& world) {
 // options' element size when set, defaultElementSize(world) otherwise --
 // 0 either from an empty world or one whose every primitive has an
 // infinite bbox.
-RtFloat resolveElementSize(GMANWorldManager& world, GMANOptions const& options) {
+RtFloat resolveElementSize(GMANWorld const& world, GMANOptions const& options) {
   RtFloat const configured = options.getRadiosityElementSize();
   return configured > (RtFloat)0 ? configured : defaultElementSize(world);
 }
@@ -162,7 +160,7 @@ std::vector<GMANColor> elementReflectance(GMANRadiosityMesh const& mesh, GMANMat
 
 } // namespace
 
-void GMANRadiosityPass::prepare(GMANWorldManager& world, GMANRayOccluder const& occluder, GMANOptions const& options) {
+void GMANRadiosityPass::prepare(GMANWorld const& world, GMANRayOccluder const& occluder, GMANOptions const& options) {
   mesh = GMANRadiosityMesh();
   solution = GMANRadiositySolution();
   ready = false;

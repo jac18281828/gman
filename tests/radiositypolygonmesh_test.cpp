@@ -34,7 +34,6 @@
 #include "check.h"
 #include "gmanattributes.h"
 #include "gmandictionary.h"
-#include "gmanlinearworldmanager.h"
 #include "gmanoptions.h"
 #include "gmanowned.h"
 #include "gmanpolygonmesh.h"
@@ -48,6 +47,7 @@
 #include "gmanrayprimitivefactory.h"
 #include "gmantransform.h"
 #include "gmanvector.h"
+#include "gmanworld.h"
 
 namespace {
 
@@ -239,12 +239,12 @@ std::vector<GMANPoint> holeSquare() {
 // than aligning with it.
 void testHoledSquareArea() {
   auto prim = buildGeneralPolygon({outerSquare(), holeSquare()});
-  GMANLinearWorldManager worldManager;
-  worldManager.add(std::move(prim));
+  GMANWorld world;
+  world.add(std::move(prim));
 
   GMANRadiosityMesh mesh;
   RtFloat const maxEdgeLength = 0.35f;
-  mesh.build(worldManager, maxEdgeLength);
+  mesh.build(world, maxEdgeLength);
 
   RtFloat const expected = 3.0f; // outer area 4 minus hole area 1
   RtFloat const diced = sumElementAreas(mesh);
@@ -295,11 +295,11 @@ void testConcaveLShapeArea() {
       GMANPoint(1.0, 1.0, 0.0), GMANPoint(1.0, 2.0, 0.0), GMANPoint(0.0, 2.0, 0.0),
   };
   auto prim = buildPolygon(lShape);
-  GMANLinearWorldManager worldManager;
-  worldManager.add(std::move(prim));
+  GMANWorld world;
+  world.add(std::move(prim));
 
   GMANRadiosityMesh mesh;
-  mesh.build(worldManager, 0.5f);
+  mesh.build(world, 0.5f);
 
   RtFloat const expected = (RtFloat)shoelaceArea(lShape);
   RtFloat const diced = sumElementAreas(mesh);
@@ -336,11 +336,11 @@ std::vector<std::vector<RtInt>> unitCubeFaces() {
 
 void testPointsPolygonCubeArea() {
   auto prim = buildPointsPolygon(unitCubePoints(), unitCubeFaces());
-  GMANLinearWorldManager worldManager;
-  worldManager.add(std::move(prim));
+  GMANWorld world;
+  world.add(std::move(prim));
 
   GMANRadiosityMesh mesh;
-  mesh.build(worldManager, 0.2f);
+  mesh.build(world, 0.2f);
 
   RtFloat const expected = 6.0f; // unit cube: 6 faces, area 1 each
   RtFloat const diced = sumElementAreas(mesh);
@@ -360,11 +360,11 @@ void testPointsGeneralPolygonsHoleArea() {
 
   std::vector<std::vector<std::vector<RtInt>>> const faces = {{{0, 1, 2, 3}, {4, 5, 6, 7}}};
   auto prim = buildPointsGeneralPolygons(points, faces);
-  GMANLinearWorldManager worldManager;
-  worldManager.add(std::move(prim));
+  GMANWorld world;
+  world.add(std::move(prim));
 
   GMANRadiosityMesh mesh;
-  mesh.build(worldManager, 0.4f);
+  mesh.build(world, 0.4f);
 
   RtFloat const expected = 3.0f; // outer area 4 minus hole area 1
   RtFloat const diced = sumElementAreas(mesh);
@@ -396,13 +396,13 @@ GMANRay cubeAxisRay(int axis, RtFloat faceSign, RtFloat u, RtFloat v) {
 
 void testMeshLookupThroughBVH() {
   auto prim = buildPointsPolygon(unitCubePoints(), unitCubeFaces());
-  GMANLinearWorldManager worldManager;
-  worldManager.add(std::move(prim));
+  GMANWorld world;
+  world.add(std::move(prim));
 
   GMANRayBVH bvh;
-  bvh.build(worldManager);
+  bvh.build(world);
   GMANRadiosityMesh mesh;
-  mesh.build(worldManager, 0.2f);
+  mesh.build(world, 0.2f);
 
   struct FaceCase {
     int axis;

@@ -59,6 +59,7 @@
 #include "gmantransform.h"
 #include "gmanvector.h"
 #include "gmanvsperspective.h"
+#include "gmanworld.h"
 #include "maketransform.h"
 #include "pathtracerscene.h"
 #include "ri.h"
@@ -107,6 +108,7 @@ struct HairlineScene {
   GMANMatrix4 const identity;
   gman::VSPerspective viewingSys;
   GMANPathtraceRenderer renderer;
+  GMANWorld world;
 
   HairlineScene()
       : distantLight(GMAN_LIGHT_DISTANT, GMANColor(kLightIntensity, kLightIntensity, kLightIntensity), GMANPoint(),
@@ -122,7 +124,7 @@ struct HairlineScene {
     appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
     appearance.lights = {&distantLight};
     ring->setAppearance(appearance);
-    renderer.getWorldManager()->add(std::move(ring));
+    world.add(std::move(ring));
   }
 
   Frame render(RtFloat variance, RtInt minsamples = kMinSamples) {
@@ -137,7 +139,7 @@ struct HairlineScene {
 
     GMANFrameBuffer frameBuffer(kFrameSize, kFrameSize, kBlack);
     GMANAttributes const attributes;
-    renderer.render(&frameBuffer, &viewingSys, options, attributes);
+    renderer.render(world, &frameBuffer, &viewingSys, options, attributes);
 
     Frame frame;
     frame.counts = renderer.slotPathCounts();

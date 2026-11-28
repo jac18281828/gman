@@ -145,7 +145,7 @@ void testFreeze() {
   check(world.frozen() && addresses(world) == added, "a second freeze changes nothing");
 
   auto rejected = gman::make<CountedPrimitive>();
-  bool threw = false;
+  auto threw = false;
   RtInt code = 0;
   RtInt severity = 0;
   try {
@@ -178,9 +178,9 @@ void testOfType() {
   auto base = gman::make<CountedPrimitive>();
   auto derived = gman::make<DerivedPrimitive>();
   auto unrelated = gman::make<UnrelatedPrimitive>();
-  CountedPrimitive const* const baseAt = base.get();
+  auto const* const baseAt = base.get();
   CountedPrimitive const* const derivedAt = derived.get();
-  UnrelatedPrimitive const* const unrelatedAt = unrelated.get();
+  auto const* const unrelatedAt = unrelated.get();
   world.add(std::move(base));
   world.add(std::move(derived));
   world.add(std::move(unrelated));
@@ -207,7 +207,7 @@ void testOfType() {
 void testMoveOnly() {
   GMANWorld source;
   const auto added = addCounted(source, 2);
-  const GMANWorld target = std::move(source);
+  const auto target = std::move(source);
   check(addresses(target) == added, "a moved world holds the primitives its source held");
   check(liveCount == 2, "a move creates and destroys no primitive");
 }

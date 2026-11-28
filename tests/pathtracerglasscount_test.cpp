@@ -52,6 +52,7 @@
 #include "gmantransform.h"
 #include "gmanvector.h"
 #include "gmanvsperspective.h"
+#include "gmanworld.h"
 #include "pathtracerarealightscene.h"
 #include "pathtracerscene.h"
 #include "ri.h"
@@ -197,20 +198,21 @@ void testGlassPaneCountsOnce() {
   gman::VSPerspective viewingSys(kFloorRes, kFloorRes, squareScreenWindow(), identity, 90.0f, 0.5f, 50.0f);
 
   GMANPathtraceRenderer renderer;
+  GMANWorld world;
   auto floor = buildFloor();
   floor->setAppearance(floorAppearance());
-  renderer.getWorldManager()->add(std::move(floor));
+  world.add(std::move(floor));
 
   GMANLight const areaLight(GMAN_LIGHT_AREA, GMANColor(kAreaLe, kAreaLe, kAreaLe), GMANPoint(), GMANVector());
-  addEmittingSphere(renderer, areaLight, kSphereRadius, kSphereCentreX, kSphereCentreY, kSphereCentreZ);
+  addEmittingSphere(world, areaLight, kSphereRadius, kSphereCentreX, kSphereCentreY, kSphereCentreZ);
 
   auto paneOwner = buildGlassPane(1.0f);
   auto* const pane = paneOwner.get();
-  renderer.getWorldManager()->add(std::move(paneOwner));
+  world.add(std::move(paneOwner));
 
   GMANFrameBuffer frameBuffer(kFloorRes, kFloorRes, options.getBackground());
   GMANAttributes const attr;
-  renderer.render(&frameBuffer, &viewingSys, options, attr);
+  renderer.render(world, &frameBuffer, &viewingSys, options, attr);
   check(renderer.droppedPathCount() == 0, "glass pane: droppedPathCount() is 0");
 
   std::vector<double> residuals[3];
@@ -260,20 +262,21 @@ std::unique_ptr<GMANFrameBuffer> renderGlassPanePair(bool misEnabled) {
   gman::VSPerspective viewingSys(kPairRes, kPairRes, squareScreenWindow(), identity, 90.0f, 0.5f, 50.0f);
 
   auto renderer = std::make_unique<GMANPathtraceRenderer>();
+  GMANWorld world;
   renderer->setMultipleImportanceSampling(misEnabled);
 
   auto floor = buildFloor();
   floor->setAppearance(floorAppearance());
-  renderer->getWorldManager()->add(std::move(floor));
+  world.add(std::move(floor));
 
   GMANLight const areaLight(GMAN_LIGHT_AREA, GMANColor(kBigAreaLe, kBigAreaLe, kBigAreaLe), GMANPoint(), GMANVector());
-  addEmittingSphere(*renderer, areaLight, kBigSphereRadius, kBigSphereCentreX, kBigSphereCentreY, kBigSphereCentreZ);
+  addEmittingSphere(world, areaLight, kBigSphereRadius, kBigSphereCentreX, kBigSphereCentreY, kBigSphereCentreZ);
 
-  renderer->getWorldManager()->add(buildHorizontalGlassPane(kPairPaneOs));
+  world.add(buildHorizontalGlassPane(kPairPaneOs));
 
   auto frameBuffer = std::make_unique<GMANFrameBuffer>(kPairRes, kPairRes, options.getBackground());
   GMANAttributes const attr;
-  renderer->render(frameBuffer.get(), &viewingSys, options, attr);
+  renderer->render(world, frameBuffer.get(), &viewingSys, options, attr);
   check(renderer->droppedPathCount() == 0, "glass pane pair: droppedPathCount() is 0");
   return frameBuffer;
 }
@@ -288,10 +291,10 @@ std::unique_ptr<GMANFrameBuffer> renderGlassPanePair(bool misEnabled) {
 void checkNextEventWeightWellBelowOne() {
   constexpr std::uint32_t kDraws = 1024u;
 
-  GMANPathtraceRenderer renderer;
+  GMANWorld world;
   GMANLight const areaLight(GMAN_LIGHT_AREA, GMANColor(kBigAreaLe, kBigAreaLe, kBigAreaLe), GMANPoint(), GMANVector());
-  addEmittingSphere(renderer, areaLight, kBigSphereRadius, kBigSphereCentreX, kBigSphereCentreY, kBigSphereCentreZ);
-  std::vector<gman::Emitter> const emitters = gman::emitters(*renderer.getWorldManager());
+  addEmittingSphere(world, areaLight, kBigSphereRadius, kBigSphereCentreX, kBigSphereCentreY, kBigSphereCentreZ);
+  std::vector<gman::Emitter> const emitters = gman::emitters(world);
   check(emitters.size() == 1, "glass pane pair: the validity check's own world has exactly one emitter");
 
   GMANPoint const floorCentre(0.0f, kFloorY, 9.0f);

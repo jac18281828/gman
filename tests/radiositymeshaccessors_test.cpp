@@ -35,7 +35,6 @@
 #include <vector>
 
 #include "check.h"
-#include "gmanlinearworldmanager.h"
 #include "gmanmath.h"
 #include "gmanmatrix4.h"
 #include "gmanowned.h"
@@ -48,6 +47,7 @@
 #include "gmanraypolygonmesh.h"
 #include "gmanraysphere.h"
 #include "gmanvector.h"
+#include "gmanworld.h"
 #include "maketransform.h"
 
 namespace {
@@ -123,10 +123,10 @@ bool insideLoopXY(std::vector<GMANPoint> const& loop, GMANPoint const& p) {
 // point, normal and density match the cell's own geometry.
 void checkPlanarContainment(char const* name, std::vector<GMANPoint> const& outer,
                             std::vector<std::vector<GMANPoint>> const& holes) {
-  GMANLinearWorldManager worldManager;
-  worldManager.add(gman::make<GMANRayPolygon>(outer, holes, GMANParameterList()));
+  GMANWorld world;
+  world.add(gman::make<GMANRayPolygon>(outer, holes, GMANParameterList()));
   GMANRadiosityMesh mesh;
-  mesh.build(worldManager, 0.3f);
+  mesh.build(world, 0.3f);
 
   int onSurface = 0;
   int offSurface = 0;
@@ -215,11 +215,11 @@ void testSphereDensity() {
   move.trans(centre.getX(), centre.getY(), centre.getZ());
   placement.concat(move);
 
-  GMANLinearWorldManager worldManager;
-  worldManager.add(gman::make<GMANRaySphere>((RtFloat)radius, (RtFloat)-radius, (RtFloat)radius, 360.0f,
-                                             GMANParameterList(), makeTransform(placement)));
+  GMANWorld world;
+  world.add(gman::make<GMANRaySphere>((RtFloat)radius, (RtFloat)-radius, (RtFloat)radius, 360.0f, GMANParameterList(),
+                                      makeTransform(placement)));
   GMANRadiosityMesh mesh;
-  mesh.build(worldManager, 0.35f);
+  mesh.build(world, 0.35f);
   SphereGrid const grid = sphereGrid(mesh);
 
   double worstDensity = 0;
@@ -267,13 +267,13 @@ void testSphereDensity() {
 void testSphereSameNode() {
   GMANMatrix4 placement;
   placement.trans(0.4f, 0.1f, 5.0f);
-  GMANLinearWorldManager worldManager;
-  worldManager.add(gman::make<GMANRaySphere>(1.2f, -1.2f, 1.2f, 360.0f, GMANParameterList(), makeTransform(placement)));
+  GMANWorld world;
+  world.add(gman::make<GMANRaySphere>(1.2f, -1.2f, 1.2f, 360.0f, GMANParameterList(), makeTransform(placement)));
   // A second primitive at exactly the same place: every node coincides
   // with one of the first sphere's.
-  worldManager.add(gman::make<GMANRaySphere>(1.2f, -1.2f, 1.2f, 360.0f, GMANParameterList(), makeTransform(placement)));
+  world.add(gman::make<GMANRaySphere>(1.2f, -1.2f, 1.2f, 360.0f, GMANParameterList(), makeTransform(placement)));
   GMANRadiosityMesh mesh;
-  mesh.build(worldManager, 0.4f);
+  mesh.build(world, 0.4f);
 
   std::size_t const perSphere = mesh.getNodeCount() / 2;
   // Element 0 belongs to the first sphere; its own grid is the first half.
@@ -331,12 +331,12 @@ void testMeshFaces() {
   auto polygonMeshOwner = gman::make<GMANRayPolygonMesh>(std::move(faces));
   auto* const polygonMesh = polygonMeshOwner.get();
 
-  GMANLinearWorldManager worldManager;
-  worldManager.add(std::move(polygonMeshOwner));
+  GMANWorld world;
+  world.add(std::move(polygonMeshOwner));
   GMANRadiosityMesh mesh;
-  mesh.build(worldManager, 0.25f);
+  mesh.build(world, 0.25f);
   GMANRayBVH bvh;
-  bvh.build(worldManager);
+  bvh.build(world);
 
   bool everyFaceHit = true;
   bool matchesBvh = true;
@@ -374,15 +374,15 @@ void testMeshFaces() {
 }
 
 void testSpherePrimitive() {
-  GMANLinearWorldManager worldManager;
+  GMANWorld world;
   auto sphereOwner = gman::make<GMANRaySphere>(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList());
   auto* const sphere = sphereOwner.get();
-  worldManager.add(std::move(sphereOwner));
-  worldManager.add(gman::make<GMANRayPolygon>(
+  world.add(std::move(sphereOwner));
+  world.add(gman::make<GMANRayPolygon>(
       std::vector<GMANPoint>{GMANPoint(-2, -2, -1.5f), GMANPoint(2, -2, -1.5f), GMANPoint(2, 2, -1.5f)},
       GMANParameterList()));
   GMANRadiosityMesh mesh;
-  mesh.build(worldManager, 0.5f);
+  mesh.build(world, 0.5f);
 
   std::size_t onSphere = 0;
   bool consistent = true;

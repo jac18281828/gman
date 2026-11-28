@@ -31,11 +31,11 @@
 #include <utility>
 
 #include "check.h"
-#include "gmanlinearworldmanager.h"
 #include "gmanowned.h"
 #include "gmanparameterlist.h"
 #include "gmanradiositymesh.h"
 #include "gmanraycylinder.h"
+#include "gmanworld.h"
 
 namespace {
 
@@ -66,11 +66,11 @@ int main() {
 
   auto cylinderOwner = gman::make<CountingCylinder>(radius, zmin, zmax, 360.0, GMANParameterList());
   auto* const cylinder = cylinderOwner.get();
-  GMANLinearWorldManager worldManager;
-  worldManager.add(std::move(cylinderOwner));
+  GMANWorld world;
+  world.add(std::move(cylinderOwner));
 
   GMANRadiosityMesh mesh;
-  mesh.build(worldManager, maxEdgeLength);
+  mesh.build(world, maxEdgeLength);
 
   check(mesh.getElementCount() == GMANRadiosityMesh::kMaxDivisions * GMANRadiosityMesh::kMaxDivisions,
         "both axes reach kMaxDivisions at this edge length");

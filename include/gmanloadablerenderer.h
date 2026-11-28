@@ -34,7 +34,7 @@
 #include "gmanrenderer.h"
 #include "gmanvector.h"
 #include "gmanviewingsystem.h"
-#include "gmanworldmanager.h"
+#include "gmanworld.h"
 #include "ri.h"
 
 /*
@@ -69,23 +69,17 @@ public:
    * Default rendering interface.
    *
    * A renderer applies a lighting and environment model to the
-   * objects in object manager, applies the projection represented
+   * primitives in world, applies the projection represented
    * by the viewing system, and uses this information to
    * produce a frame buffer with a representation of the environment.
    */
-  virtual RtVoid render(GMANFrameBuffer* frameBuffer, GMANViewingSystem* viewingSys, const GMANOptions& options,
-                        const GMANAttributes& attributes);
+  virtual RtVoid render(GMANWorld const& world, GMANFrameBuffer* frameBuffer, GMANViewingSystem* viewingSys,
+                        const GMANOptions& options, const GMANAttributes& attributes);
 
   /*
    * Return the depth from the renderer.
    */
   virtual RtFloat getDepth(RtInt xs, RtInt ys) const;
-
-  /*
-   * Return a world manager appropriate to this renderer
-   */
-
-  virtual GMANWorldManager* getWorldManager(RtVoid);
 
   /*
    * Each renderer provides its own object manager.

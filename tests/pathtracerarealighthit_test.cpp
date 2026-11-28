@@ -51,6 +51,7 @@
 #include "gmantransform.h"
 #include "gmanvector.h"
 #include "gmanvsperspective.h"
+#include "gmanworld.h"
 #include "pathtracerarealightscene.h"
 #include "pathtracerscene.h"
 #include "ri.h"
@@ -111,7 +112,7 @@ bool cornersAllMissEmitter(gman::VSPerspective& viewingSys, int px, int py) {
   return true;
 }
 
-GMANRaySphere* addEmitterSphere(GMANPathtraceRenderer& renderer, GMANLight const& areaLight) {
+GMANRaySphere* addEmitterSphere(GMANWorld& world, GMANLight const& areaLight) {
   GMANMatrix4 place;
   place.trans(0.0, 0.0, kEmitterCentreZ);
   GMANTransform const transform = makeTransform(place);
@@ -123,7 +124,7 @@ GMANRaySphere* addEmitterSphere(GMANPathtraceRenderer& renderer, GMANLight const
   appearance.Cs = GMANColor(0.0f, 0.0f, 0.0f);
   appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   sphere->setAppearance(appearance);
-  renderer.getWorldManager()->add(std::move(sphereOwner));
+  world.add(std::move(sphereOwner));
   return sphere;
 }
 
@@ -163,7 +164,7 @@ bool cornersAllOnBackDisk(gman::VSPerspective& viewingSys, int px, int py) {
   return true;
 }
 
-GMANRayDisk* addBackFacingDisk(GMANPathtraceRenderer& renderer, GMANLight const& areaLight) {
+GMANRayDisk* addBackFacingDisk(GMANWorld& world, GMANLight const& areaLight) {
   GMANMatrix4 place;
   place.rot(GMANRadians(180.0f), 1.0f, 0.0f, 0.0f);
   place.trans(kBackDiskCentreX, 0.0f, kEmitterCentreZ);
@@ -175,7 +176,7 @@ GMANRayDisk* addBackFacingDisk(GMANPathtraceRenderer& renderer, GMANLight const&
   appearance.Cs = GMANColor(0.0f, 0.0f, 0.0f);
   appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   disk->setAppearance(appearance);
-  renderer.getWorldManager()->add(std::move(diskOwner));
+  world.add(std::move(diskOwner));
   return disk;
 }
 
@@ -191,14 +192,15 @@ void testDirectHit() {
   gman::VSPerspective viewingSys(kDirectRes, kDirectRes, squareScreenWindow(), identity, 90.0f, 0.5f, 50.0f);
 
   GMANPathtraceRenderer renderer;
+  GMANWorld world;
   GMANLight const areaLight(GMAN_LIGHT_AREA, GMANColor(kAreaLe, kAreaLe, kAreaLe), GMANPoint(), GMANVector());
-  addEmitterSphere(renderer, areaLight);
+  addEmitterSphere(world, areaLight);
   GMANLight const backDiskLight(GMAN_LIGHT_AREA, GMANColor(kAreaLe, kAreaLe, kAreaLe), GMANPoint(), GMANVector());
-  addBackFacingDisk(renderer, backDiskLight);
+  addBackFacingDisk(world, backDiskLight);
 
   GMANFrameBuffer frameBuffer(kDirectRes, kDirectRes, options.getBackground());
   GMANAttributes const attr;
-  renderer.render(&frameBuffer, &viewingSys, options, attr);
+  renderer.render(world, &frameBuffer, &viewingSys, options, attr);
   check(renderer.droppedPathCount() == 0, "direct hit: droppedPathCount() is 0");
 
   std::size_t onCount = 0, offCount = 0, backCount = 0;
@@ -300,8 +302,9 @@ void testMirrorBounce() {
   gman::VSPerspective viewingSys(kMirrorRes, kMirrorRes, squareScreenWindow(), identity, 90.0f, 0.5f, 50.0f);
 
   GMANPathtraceRenderer renderer;
+  GMANWorld world;
   GMANLight const areaLight(GMAN_LIGHT_AREA, GMANColor(kAreaLe, kAreaLe, kAreaLe), GMANPoint(), GMANVector());
-  GMANRaySphere* emitter = addEmitterSphere(renderer, areaLight);
+  GMANRaySphere* emitter = addEmitterSphere(world, areaLight);
 
   GMANMatrix4 mirrorPlace;
   mirrorPlace.trans(kMirrorCentreX, 0.0, kMirrorCentreZ);
@@ -314,11 +317,11 @@ void testMirrorBounce() {
   mirrorAppearance.Cs = GMANColor(1.0f, 1.0f, 1.0f);
   mirrorAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   mirror->setAppearance(mirrorAppearance);
-  renderer.getWorldManager()->add(std::move(mirrorOwner));
+  world.add(std::move(mirrorOwner));
 
   GMANFrameBuffer frameBuffer(kMirrorRes, kMirrorRes, options.getBackground());
   GMANAttributes const attr;
-  renderer.render(&frameBuffer, &viewingSys, options, attr);
+  renderer.render(world, &frameBuffer, &viewingSys, options, attr);
   check(renderer.droppedPathCount() == 0, "mirror bounce: droppedPathCount() is 0");
 
   // mirror and emitter are the very primitives the render just traced: the
@@ -395,8 +398,9 @@ void testGlassTransmission() {
   gman::VSPerspective viewingSys(kGlassRes, kGlassRes, squareScreenWindow(), identity, 90.0f, 0.5f, 50.0f);
 
   GMANPathtraceRenderer renderer;
+  GMANWorld world;
   GMANLight const areaLight(GMAN_LIGHT_AREA, GMANColor(kAreaLe, kAreaLe, kAreaLe), GMANPoint(), GMANVector());
-  addEmitterSphere(renderer, areaLight);
+  addEmitterSphere(world, areaLight);
 
   gman::Appearance glassAppearance;
   glassAppearance.shader = loadShader("glass", GMANParameterList());
@@ -404,14 +408,14 @@ void testGlassTransmission() {
 
   auto near = gman::make<GMANRayPolygon>(paneAt(kPaneZNear, false), GMANParameterList());
   near->setAppearance(glassAppearance);
-  renderer.getWorldManager()->add(std::move(near));
+  world.add(std::move(near));
   auto far = gman::make<GMANRayPolygon>(paneAt(kPaneZFar, true), GMANParameterList());
   far->setAppearance(glassAppearance);
-  renderer.getWorldManager()->add(std::move(far));
+  world.add(std::move(far));
 
   GMANFrameBuffer frameBuffer(kGlassRes, kGlassRes, options.getBackground());
   GMANAttributes const attr;
-  renderer.render(&frameBuffer, &viewingSys, options, attr);
+  renderer.render(world, &frameBuffer, &viewingSys, options, attr);
   check(renderer.droppedPathCount() == 0, "glass transmission: droppedPathCount() is 0");
 
   std::vector<double> transmittedValues[3];

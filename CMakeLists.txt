@@ -206,7 +206,6 @@ add_library(gman SHARED
   libgman/gmaninlineparse.cpp
   libgman/gmanlightsourcemgr.cpp
   libgman/gmanlightsourceshader.cpp
-  libgman/gmanlinearworldmanager.cpp
   libgman/gmanloadable.cpp
   libgman/gmanloadablerenderer.cpp
   libgman/gmanloadablerenderman.cpp
@@ -253,8 +252,7 @@ add_library(gman SHARED
   libgman/gmanvsorthographic.cpp
   libgman/gmanvsperspective.cpp
   libgman/gmanwindowoutput.cpp
-  libgman/gmanworld.cpp
-  libgman/gmanworldmanager.cpp)
+  libgman/gmanworld.cpp)
 
 # libgman's export header; GMAN_EXPORT replaces the MSVC-era
 # GMANDLL/NOTGMANDLL macro maze.

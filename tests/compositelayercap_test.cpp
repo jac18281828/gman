@@ -63,6 +63,7 @@
 #include "gmantransform.h"
 #include "gmanvector.h"
 #include "gmanvsperspective.h"
+#include "gmanworld.h"
 #include "maketransform.h"
 #include "ri.h"
 
@@ -106,6 +107,7 @@ StackRender renderStack(int layerCount) {
   gman::VSPerspective viewingSys(kRes, kRes, squareScreenWindow(), identity, 90.0, 0.5, 50.0);
 
   GMANRaytraceRenderer renderer;
+  GMANWorld world;
   GMANAttributes attr;
   RtColor opacity = {kLayerOpacity, kLayerOpacity, kLayerOpacity};
   attr.setOpacity(opacity);
@@ -115,13 +117,13 @@ StackRender renderStack(int layerCount) {
     GMANMatrix4 place;
     place.trans(0.0, 0.0, z);
     GMANTransform transform = makeTransform(place);
-    renderer.getWorldManager()->add(renderer.getPrimitiveFactory()->getRSDisk(
-        0.0, kDiskRadius, 360.0, GMANParameterList(), options, attr, transform));
+    world.add(renderer.getPrimitiveFactory()->getRSDisk(0.0, kDiskRadius, 360.0, GMANParameterList(), options, attr,
+                                                        transform));
   }
 
   GMANColor const background(1.0f, 1.0f, 1.0f);
   GMANFrameBuffer frameBuffer(kRes, kRes, background);
-  renderer.render(&frameBuffer, &viewingSys, options, attr);
+  renderer.render(world, &frameBuffer, &viewingSys, options, attr);
   StackRender result;
   result.colour = frameBuffer.getPixel(kRes / 2, kRes / 2);
   result.depth = renderer.getDepth(kRes / 2, kRes / 2);

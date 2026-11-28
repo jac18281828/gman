@@ -46,13 +46,13 @@
 
 #include "check.h"
 #include "gmanlightsourcemgr.h"
-#include "gmanlinearworldmanager.h"
 #include "gmanowned.h"
 #include "gmanparameterlist.h"
 #include "gmanpoint.h"
 #include "gmanrayoccluder.h"
 #include "gmanraypolygon.h"
 #include "gmanvector.h"
+#include "gmanworld.h"
 #include "ri.h"
 
 namespace {
@@ -79,15 +79,15 @@ gman::Owned<GMANRayPolygon> squareAt(RtFloat z) {
 } // namespace
 
 int main() {
-  GMANLinearWorldManager worldManager;
-  // GMANLinearWorldManager owns what it holds and deletes it on
+  GMANWorld world;
+  // GMANWorld owns what it holds and deletes it on
   // destruction, so every square is heap-allocated rather than a stack
   // object.
   for (int i = 0; i < kLayerCount; ++i) {
-    worldManager.add(squareAt(kFirstLayerZ + (RtFloat)i * kLayerSpacing));
+    world.add(squareAt(kFirstLayerZ + (RtFloat)i * kLayerSpacing));
   }
   GMANRayBVH bvh;
-  bvh.build(worldManager);
+  bvh.build(world);
   GMANRayOccluder const occluder(bvh);
 
   GMANVector towardLight(0.0f, 0.0f, 1.0f);

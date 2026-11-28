@@ -37,7 +37,6 @@
 #include "check.h"
 #include "gmanattributes.h"
 #include "gmandictionary.h"
-#include "gmanlinearworldmanager.h"
 #include "gmanoptions.h"
 #include "gmanowned.h"
 #include "gmanpolygon.h"
@@ -48,6 +47,7 @@
 #include "gmanraypolygon.h"
 #include "gmanrayprimitivefactory.h"
 #include "gmantransform.h"
+#include "gmanworld.h"
 
 namespace {
 
@@ -186,11 +186,11 @@ void testFaceNotMesh() {
   GMANRayPrimitive* mesh = dynamic_cast<GMANRayPrimitive*>(meshPrim.get());
   check(mesh != nullptr, "face k: getRSPolygonMesh returns a GMANRayPrimitive");
 
-  GMANLinearWorldManager worldManager;
-  worldManager.add(std::move(meshPrim));
+  GMANWorld world;
+  world.add(std::move(meshPrim));
 
   GMANRayBVH bvh;
-  bvh.build(worldManager);
+  bvh.build(world);
 
   // The top face, not the bottom: its own analytic normal points opposite
   // this ray's own direction, so a mutation reporting the ray's direction
@@ -236,11 +236,11 @@ void testFanAgreesWithMeshAndAnalytic() {
   GMANRayPrimitive* mesh = dynamic_cast<GMANRayPrimitive*>(meshPrim.get());
   check(mesh != nullptr, "fan: getRSPolygonMesh returns a GMANRayPrimitive");
 
-  GMANLinearWorldManager worldManager;
+  GMANWorld world;
   auto bvhMeshPrim = runGetRSPointsPolygonDirect(points, faces);
-  worldManager.add(std::move(bvhMeshPrim));
+  world.add(std::move(bvhMeshPrim));
   GMANRayBVH bvh;
-  bvh.build(worldManager);
+  bvh.build(world);
 
   RtFloat const offsets[3] = {-0.6f, 0.0f, 0.6f};
 

@@ -41,7 +41,6 @@
 #include "gmancolor.h"
 #include "gmanerror.h"
 #include "gmanlightsourcemgr.h"
-#include "gmanlinearworldmanager.h"
 #include "gmanmath.h"
 #include "gmanmatrix4.h"
 #include "gmanowned.h"
@@ -56,6 +55,7 @@
 #include "gmanraysphere.h"
 #include "gmanshading.h"
 #include "gmanvector.h"
+#include "gmanworld.h"
 #include "maketransform.h"
 
 namespace {
@@ -304,16 +304,16 @@ void testClosedSphere() {
   GMANPoint const centre(0.0f, 0.0f, (RtFloat)kSphereCentreZ);
   GMANLight const light = pointLight(centre, kSphereIntensity);
 
-  GMANLinearWorldManager worldManager;
+  GMANWorld world;
   auto sphere = gman::make<GMANRaySphere>((RtFloat)kSphereRadius, (RtFloat)-kSphereRadius, (RtFloat)kSphereRadius,
                                           360.0f, GMANParameterList(), translation(0, 0, kSphereCentreZ));
   sphere->setAppearance(opaqueAppearance({&light}));
-  worldManager.add(std::move(sphere));
+  world.add(std::move(sphere));
   GMANRayBVH bvh;
-  bvh.build(worldManager);
+  bvh.build(world);
   GMANRayOccluder const occluder(bvh);
   GMANRadiosityMesh mesh;
-  mesh.build(worldManager, kSphereMaxEdge);
+  mesh.build(world, kSphereMaxEdge);
 
   GMANRadiositySolver const solver;
   std::size_t const elementCount = mesh.getElementCount();
@@ -354,18 +354,18 @@ void testCubeClosure() {
   gman::Appearance const opaque = opaqueAppearance({});
   auto const at = [&](double x, double y, double z) { return GMANPoint((RtFloat)x, (RtFloat)y, (RtFloat)(cz + z)); };
 
-  GMANLinearWorldManager worldManager;
-  worldManager.add(polygon({at(-h, -h, -h), at(h, -h, -h), at(h, h, -h), at(-h, h, -h)}, opaque));
-  worldManager.add(polygon({at(-h, -h, h), at(-h, h, h), at(h, h, h), at(h, -h, h)}, opaque));
-  worldManager.add(polygon({at(-h, -h, -h), at(-h, h, -h), at(-h, h, h), at(-h, -h, h)}, opaque));
-  worldManager.add(polygon({at(h, -h, -h), at(h, -h, h), at(h, h, h), at(h, h, -h)}, opaque));
-  worldManager.add(polygon({at(-h, -h, -h), at(-h, -h, h), at(h, -h, h), at(h, -h, -h)}, opaque));
-  worldManager.add(polygon({at(-h, h, -h), at(h, h, -h), at(h, h, h), at(-h, h, h)}, opaque));
+  GMANWorld world;
+  world.add(polygon({at(-h, -h, -h), at(h, -h, -h), at(h, h, -h), at(-h, h, -h)}, opaque));
+  world.add(polygon({at(-h, -h, h), at(-h, h, h), at(h, h, h), at(h, -h, h)}, opaque));
+  world.add(polygon({at(-h, -h, -h), at(-h, h, -h), at(-h, h, h), at(-h, -h, h)}, opaque));
+  world.add(polygon({at(h, -h, -h), at(h, -h, h), at(h, h, h), at(h, h, -h)}, opaque));
+  world.add(polygon({at(-h, -h, -h), at(-h, -h, h), at(h, -h, h), at(h, -h, -h)}, opaque));
+  world.add(polygon({at(-h, h, -h), at(h, h, -h), at(h, h, h), at(-h, h, h)}, opaque));
   GMANRayBVH bvh;
-  bvh.build(worldManager);
+  bvh.build(world);
   GMANRayOccluder const occluder(bvh);
   GMANRadiosityMesh mesh;
-  mesh.build(worldManager, kCubeMaxEdge);
+  mesh.build(world, kCubeMaxEdge);
 
   std::size_t const count = mesh.getElementCount();
   std::size_t const samples = GMANRadiositySolver::kDefaultSamples;
@@ -404,23 +404,23 @@ void testCubeClosure() {
 // opacity covering every A-B segment. Returns B's facing-side mean H_ind.
 GMANColor transmittedIndirect(bool withMiddle, GMANColor const& middleOs) {
   GMANLight const light = pointLight(GMANPoint(0.5f, 0.5f, 5.25f), 1.0);
-  GMANLinearWorldManager worldManager;
+  GMANWorld world;
   auto squareAOwner = polygon(squareXY(0, 1, 0, 1, 5), opaqueAppearance({&light}));
   auto* const squareA = squareAOwner.get();
   auto squareBOwner = polygon(squareXY(0, 1, 0, 1, 6), opaqueAppearance({}));
   auto* const squareB = squareBOwner.get();
-  worldManager.add(std::move(squareAOwner));
-  worldManager.add(std::move(squareBOwner));
+  world.add(std::move(squareAOwner));
+  world.add(std::move(squareBOwner));
   if (withMiddle) {
     gman::Appearance middle = opaqueAppearance({});
     middle.Os = middleOs;
-    worldManager.add(polygon(squareXY(-0.5, 1.5, -0.5, 1.5, 5.5), middle));
+    world.add(polygon(squareXY(-0.5, 1.5, -0.5, 1.5, 5.5), middle));
   }
   GMANRayBVH bvh;
-  bvh.build(worldManager);
+  bvh.build(world);
   GMANRayOccluder const occluder(bvh);
   GMANRadiosityMesh mesh;
-  mesh.build(worldManager, kSquareMaxEdge);
+  mesh.build(world, kSquareMaxEdge);
 
   std::size_t const endA = runEnd(mesh, 0, squareA);
   std::size_t const endB = runEnd(mesh, endA, squareB);
@@ -463,13 +463,13 @@ struct LitSquare {
 LitSquare solveLitSquare(bool reversed) {
   GMANPoint const lightPosition(0.3f, 0.6f, 6.0f);
   GMANLight const light = pointLight(lightPosition, 1.0);
-  GMANLinearWorldManager worldManager;
-  worldManager.add(polygon(squareXY(0, 1, 0, 1, 5, reversed), opaqueAppearance({&light})));
+  GMANWorld world;
+  world.add(polygon(squareXY(0, 1, 0, 1, 5, reversed), opaqueAppearance({&light})));
   GMANRayBVH bvh;
-  bvh.build(worldManager);
+  bvh.build(world);
   GMANRayOccluder const occluder(bvh);
   GMANRadiosityMesh mesh;
-  mesh.build(worldManager, 0.25f);
+  mesh.build(world, 0.25f);
 
   std::size_t const count = mesh.getElementCount();
   GMANRadiositySolution const solution = GMANRadiositySolver().solve(mesh, occluder, uniformReflectance(count, 0.5));
@@ -504,20 +504,20 @@ void testLitFromOutside() {
   GMANPoint const lightPosition(3.0f, 2.0f, 5.5f);
   GMANLight const light = pointLight(lightPosition, kOutsideIntensity);
 
-  GMANLinearWorldManager worldManager;
+  GMANWorld world;
   auto sphereOwner = gman::make<GMANRaySphere>(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList(), translation(0, 0, 5));
   auto* const sphere = sphereOwner.get();
   sphere->setAppearance(opaqueAppearance({&light}));
-  worldManager.add(std::move(sphereOwner));
+  world.add(std::move(sphereOwner));
   std::vector<GMANPoint> const floorCorners = {GMANPoint(-1.4f, -1.3f, 3.6f), GMANPoint(1.4f, -1.3f, 3.6f),
                                                GMANPoint(1.4f, -1.3f, 6.4f), GMANPoint(-1.4f, -1.3f, 6.4f)};
   auto floor = polygon(floorCorners, opaqueAppearance({&light}));
-  worldManager.add(std::move(floor));
+  world.add(std::move(floor));
   GMANRayBVH bvh;
-  bvh.build(worldManager);
+  bvh.build(world);
   GMANRayOccluder const occluder(bvh);
   GMANRadiosityMesh mesh;
-  mesh.build(worldManager, kOutsideSphereMaxEdge);
+  mesh.build(world, kOutsideSphereMaxEdge);
 
   std::size_t const count = mesh.getElementCount();
   GMANRadiositySolution const solution = GMANRadiositySolver().solve(mesh, occluder, uniformReflectance(count, 0.5));
@@ -588,13 +588,13 @@ void testLitFromOutside() {
 void testNoDirectPower() {
   GMANPoint const lightPosition(0.5f, 0.5f, 6.0f);
   GMANLight const light = pointLight(lightPosition, 1.0);
-  GMANLinearWorldManager worldManager;
-  worldManager.add(polygon(squareXY(0, 1, 0, 1, 5), opaqueAppearance({&light})));
+  GMANWorld world;
+  world.add(polygon(squareXY(0, 1, 0, 1, 5), opaqueAppearance({&light})));
   GMANRayBVH bvh;
-  bvh.build(worldManager);
+  bvh.build(world);
   GMANRayOccluder const occluder(bvh);
   GMANRadiosityMesh mesh;
-  mesh.build(worldManager, kNoDirectPowerMaxEdge);
+  mesh.build(world, kNoDirectPowerMaxEdge);
 
   std::size_t const count = mesh.getElementCount();
   GMANRadiositySolution const solution = GMANRadiositySolver().solve(mesh, occluder, uniformReflectance(count, 0.0));
@@ -643,13 +643,13 @@ bool rejects(GMANRadiosityMesh const& mesh, GMANRayOccluder const& occluder, std
 
 void testRejectsBadInput() {
   GMANLight const light = pointLight(GMANPoint(0.5f, 0.5f, 6.0f), 1.0);
-  GMANLinearWorldManager worldManager;
-  worldManager.add(polygon(squareXY(0, 1, 0, 1, 5), opaqueAppearance({&light})));
+  GMANWorld world;
+  world.add(polygon(squareXY(0, 1, 0, 1, 5), opaqueAppearance({&light})));
   GMANRayBVH bvh;
-  bvh.build(worldManager);
+  bvh.build(world);
   GMANRayOccluder const occluder(bvh);
   GMANRadiosityMesh mesh;
-  mesh.build(worldManager, 0.5f);
+  mesh.build(world, 0.5f);
 
   std::size_t const count = mesh.getElementCount();
   std::vector<GMANColor> const valid = uniformReflectance(count, 0.5);
@@ -680,26 +680,25 @@ public:
     auto const at = [](double x, double y, double z) {
       return GMANPoint((RtFloat)x, (RtFloat)y, (RtFloat)(kEnclosureCentreZ + z));
     };
-    worldManager.add(polygon({at(-h, -h, -h), at(h, -h, -h), at(h, h, -h), at(-h, h, -h)}, lit));
-    worldManager.add(polygon({at(-h, -h, h), at(-h, h, h), at(h, h, h), at(h, -h, h)}, lit));
-    worldManager.add(polygon({at(-h, -h, -h), at(-h, h, -h), at(-h, h, h), at(-h, -h, h)}, lit));
-    worldManager.add(polygon({at(h, -h, -h), at(h, -h, h), at(h, h, h), at(h, h, -h)}, lit));
-    worldManager.add(polygon({at(-h, -h, -h), at(-h, -h, h), at(h, -h, h), at(h, -h, -h)}, lit));
-    worldManager.add(polygon({at(-h, h, -h), at(h, h, -h), at(h, h, h), at(-h, h, h)}, lit));
+    world.add(polygon({at(-h, -h, -h), at(h, -h, -h), at(h, h, -h), at(-h, h, -h)}, lit));
+    world.add(polygon({at(-h, -h, h), at(-h, h, h), at(h, h, h), at(h, -h, h)}, lit));
+    world.add(polygon({at(-h, -h, -h), at(-h, h, -h), at(-h, h, h), at(-h, -h, h)}, lit));
+    world.add(polygon({at(h, -h, -h), at(h, -h, h), at(h, h, h), at(h, h, -h)}, lit));
+    world.add(polygon({at(-h, -h, -h), at(-h, -h, h), at(h, -h, h), at(h, -h, -h)}, lit));
+    world.add(polygon({at(-h, h, -h), at(h, h, -h), at(h, h, h), at(-h, h, h)}, lit));
 
     auto sphere = gman::make<GMANRaySphere>((RtFloat)kEnclosureSphereRadius, (RtFloat)-kEnclosureSphereRadius,
                                             (RtFloat)kEnclosureSphereRadius, 360.0f, GMANParameterList(),
                                             translation(-0.8, -1.0, kEnclosureCentreZ));
     sphere->setAppearance(lit);
-    worldManager.add(std::move(sphere));
+    world.add(std::move(sphere));
 
     gman::Appearance blocker = opaqueAppearance({});
     blocker.Os = GMANColor((RtFloat)kEnclosureBlockerOs, (RtFloat)kEnclosureBlockerOs, (RtFloat)kEnclosureBlockerOs);
-    worldManager.add(
-        polygon({at(1.0, -0.5, -1.0), at(1.0, -0.5, 1.0), at(1.0, 1.8, 1.0), at(1.0, 1.8, -1.0)}, blocker));
+    world.add(polygon({at(1.0, -0.5, -1.0), at(1.0, -0.5, 1.0), at(1.0, 1.8, 1.0), at(1.0, 1.8, -1.0)}, blocker));
 
-    bvh.build(worldManager);
-    mesh.build(worldManager, maxEdge);
+    bvh.build(world);
+    mesh.build(world, maxEdge);
     reflectance = uniformReflectance(mesh.getElementCount(), kEnclosureReflectance);
   }
 
@@ -711,7 +710,7 @@ public:
 
 private:
   GMANLight light;
-  GMANLinearWorldManager worldManager;
+  GMANWorld world;
   GMANRayBVH bvh;
   GMANRayOccluder occluder;
   GMANRadiosityMesh mesh;

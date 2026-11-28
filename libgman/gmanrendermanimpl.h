@@ -36,7 +36,7 @@
 #include "gmanrenderer.h"
 #include "gmanrenderman.h"
 #include "gmanviewingsystem.h"
-#include "gmanworldmanager.h"
+#include "gmanworld.h"
 #include "ri.h"
 
 /*
@@ -58,8 +58,9 @@ private:
   // from renderer, valid exactly while renderer holds a value
   GMANPrimitiveFactory* primitiveFactory;
 
-  // world manager; borrowed from renderer like primitiveFactory
-  GMANWorldManager* worldManager;
+  // the world every primitive request adds to; a renderer borrows it through
+  // render()
+  GMANWorld currentWorld;
 
   // Viewing system
   std::unique_ptr<GMANViewingSystem> viewingSystem;

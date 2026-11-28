@@ -48,6 +48,7 @@
 #include "gmanshading.h"
 #include "gmanvector.h"
 #include "gmanvsperspective.h"
+#include "gmanworld.h"
 #include "pathtracerarealightscene.h"
 #include "pathtracerscene.h"
 #include "ri.h"
@@ -82,7 +83,7 @@ constexpr double kSelectionMargin = 0.05;
 // on the mesh and on its face, its own colour black so it reflects nothing.
 // vertexNormals, when given, shade the face and leave the direction it emits
 // unchanged.
-void addPanel(GMANPathtraceRenderer& renderer, GMANLight const& light, std::vector<GMANPoint> const& loop,
+void addPanel(GMANWorld& world, GMANLight const& light, std::vector<GMANPoint> const& loop,
               std::vector<GMANVector> const& vertexNormals) {
   gman::Appearance appearance;
   appearance.areaLight = &light;
@@ -90,7 +91,7 @@ void addPanel(GMANPathtraceRenderer& renderer, GMANLight const& light, std::vect
   appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
 
   auto mesh = taggedmesh::buildTaggedMesh({taggedmesh::FaceSpec{loop, {}, vertexNormals}}, appearance);
-  renderer.getWorldManager()->add(std::move(mesh));
+  world.add(std::move(mesh));
 }
 
 // The panel over the floor: 2 wide in x, 2 deep in z, at y = -1, wound
@@ -157,21 +158,22 @@ void testPanelOverFloor() {
   gman::VSPerspective viewingSys(kFloorRes, kFloorRes, squareScreenWindow(), identity, 90.0f, 0.5f, 50.0f);
 
   GMANPathtraceRenderer renderer;
+  GMANWorld world;
   auto floor = buildFloor();
   gman::Appearance floorAppearance;
   floorAppearance.shader = loadShader("matte", matteParams(1.0f));
   floorAppearance.Cs = GMANColor(kReflectance, kReflectance, kReflectance);
   floorAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   floor->setAppearance(floorAppearance);
-  renderer.getWorldManager()->add(std::move(floor));
+  world.add(std::move(floor));
 
   GMANLight const areaLight(GMAN_LIGHT_AREA, GMANColor(kAreaLe, kAreaLe, kAreaLe), GMANPoint(), GMANVector());
   std::vector<GMANPoint> const panel = overheadPanel();
-  addPanel(renderer, areaLight, panel, {});
+  addPanel(world, areaLight, panel, {});
 
   GMANFrameBuffer frameBuffer(kFloorRes, kFloorRes, options.getBackground());
   GMANAttributes const attr;
-  renderer.render(&frameBuffer, &viewingSys, options, attr);
+  renderer.render(world, &frameBuffer, &viewingSys, options, attr);
   check(renderer.droppedPathCount() == 0, "panel over floor: droppedPathCount() is 0");
 
   std::vector<double> residuals[3];
@@ -288,14 +290,15 @@ void testDirectHit() {
   gman::VSPerspective viewingSys(kDirectRes, kDirectRes, squareScreenWindow(), identity, 90.0f, 0.5f, 50.0f);
 
   GMANPathtraceRenderer renderer;
+  GMANWorld world;
   GMANLight const areaLight(GMAN_LIGHT_AREA, GMANColor(kAreaLe, kAreaLe, kAreaLe), GMANPoint(), GMANVector());
-  addPanel(renderer, areaLight, directPanel(kTowardPanelX, true), {});
-  addPanel(renderer, areaLight, directPanel(kAwayPanelX, false), {});
-  addPanel(renderer, areaLight, directPanel(kTiltedPanelX, true), tiltedNormals());
+  addPanel(world, areaLight, directPanel(kTowardPanelX, true), {});
+  addPanel(world, areaLight, directPanel(kAwayPanelX, false), {});
+  addPanel(world, areaLight, directPanel(kTiltedPanelX, true), tiltedNormals());
 
   GMANFrameBuffer frameBuffer(kDirectRes, kDirectRes, options.getBackground());
   GMANAttributes const attr;
-  renderer.render(&frameBuffer, &viewingSys, options, attr);
+  renderer.render(world, &frameBuffer, &viewingSys, options, attr);
   check(renderer.droppedPathCount() == 0, "direct hit: droppedPathCount() is 0");
 
   std::size_t towardCount = 0, awayCount = 0, tiltedCount = 0, offCount = 0;

@@ -49,7 +49,7 @@
 #include "gmanraysphere.h"
 #include "gmanraytorus.h"
 #include "gmanvector.h"
-#include "gmanworldmanager.h"
+#include "gmanworld.h"
 #include "ri.h"
 
 namespace {
@@ -106,7 +106,7 @@ struct ParametricGrid {
   std::vector<GMANPoint> positions;
 };
 
-ParametricGrid buildParametricGrid(GMANParametric& parametric, GMANMatrix4 const& objectToCamera, std::size_t nu,
+ParametricGrid buildParametricGrid(GMANParametric const& parametric, GMANMatrix4 const& objectToCamera, std::size_t nu,
                                    std::size_t nv) {
   ParametricGrid grid;
   grid.nu = nu;
@@ -137,7 +137,7 @@ RtFloat effectiveEdgeLength(GMANPoint const& p0, GMANPoint const& p1, GMANPoint 
   return GMANMax(pointDistance(p0, p1), GMANMax(halfA, halfB) * (RtFloat)2.0);
 }
 
-void maxGridEdgeLengths(GMANParametric& parametric, GMANMatrix4 const& objectToCamera, ParametricGrid const& grid,
+void maxGridEdgeLengths(GMANParametric const& parametric, GMANMatrix4 const& objectToCamera, ParametricGrid const& grid,
                         RtFloat& maxU, RtFloat& maxV) {
   std::size_t const nu = grid.nu;
   std::size_t const nv = grid.nv;
@@ -199,7 +199,7 @@ template <class Measure> std::size_t resolveAxisCount(std::size_t cap, RtFloat t
 // maxV, so resolving nu then nv, each against the other's latest count, is a
 // monotone relaxation that climbs to its fixed point in a handful of rounds
 // rather than one step per unit.
-ParametricGrid chooseParametricResolution(GMANParametric& parametric, GMANMatrix4 const& objectToCamera,
+ParametricGrid chooseParametricResolution(GMANParametric const& parametric, GMANMatrix4 const& objectToCamera,
                                           RtFloat maxEdgeLength) {
   std::size_t const cap = GMANRadiosityMesh::kMaxDivisions;
   std::size_t nu = 1;
@@ -233,7 +233,7 @@ ParametricGrid chooseParametricResolution(GMANParametric& parametric, GMANMatrix
 
 // Appends grid's own (nu + 1) x (nv + 1) node positions to nodes, each
 // node's normal from getNormal through objectToCamera's inverse transpose.
-void appendParametricNodes(GMANParametric& parametric, gman::InvertibleMatrix const& objectToCamera,
+void appendParametricNodes(GMANParametric const& parametric, gman::InvertibleMatrix const& objectToCamera,
                            ParametricGrid const& grid, std::vector<GMANRadiosityNode>& nodes) {
   std::size_t const nu = grid.nu;
   std::size_t const nv = grid.nv;
@@ -256,8 +256,8 @@ void appendParametricNodes(GMANParametric& parametric, gman::InvertibleMatrix co
 
 // Tries one quadric class's own getObjectToCamera, false for anything else.
 template <class Quadric>
-bool tryQuadricObjectToCamera(GMANPrimitive* primitive, std::optional<gman::InvertibleMatrix>& placement) {
-  auto* p = dynamic_cast<Quadric*>(primitive);
+bool tryQuadricObjectToCamera(GMANPrimitive const* primitive, std::optional<gman::InvertibleMatrix>& placement) {
+  auto const* p = dynamic_cast<Quadric const*>(primitive);
   if (!p) {
     return false;
   }
@@ -269,7 +269,7 @@ bool tryQuadricObjectToCamera(GMANPrimitive* primitive, std::optional<gman::Inve
 // classes primitive actually is, tried once per type. Returns false for
 // anything else, including a GMANRayPolygon, which has no such matrix.
 // placement is empty for a quadric whose placement will not invert.
-bool getQuadricObjectToCamera(GMANPrimitive* primitive, std::optional<gman::InvertibleMatrix>& placement) {
+bool getQuadricObjectToCamera(GMANPrimitive const* primitive, std::optional<gman::InvertibleMatrix>& placement) {
   return tryQuadricObjectToCamera<GMANRaySphere>(primitive, placement) ||
          tryQuadricObjectToCamera<GMANRayCylinder>(primitive, placement) ||
          tryQuadricObjectToCamera<GMANRayCone>(primitive, placement) ||
@@ -636,8 +636,7 @@ struct GMANRadiosityMesh::PrimitiveMesh {
   std::vector<std::vector<Point2>> holesST;
 
   // Quadric only: the surface and its placement surfacePoint evaluates.
-  // getLocation and getNormal are non-const, hence the non-const pointer.
-  GMANParametric* parametric = nullptr;
+  GMANParametric const* parametric = nullptr;
   gman::InvertibleMatrix objectToCamera;
 };
 
@@ -716,7 +715,7 @@ void GMANRadiosityMesh::appendParametricElements(std::size_t nu, std::size_t nv,
   }
 }
 
-void GMANRadiosityMesh::diceParametric(GMANPrimitive* primitive, GMANParametric& parametric,
+void GMANRadiosityMesh::diceParametric(GMANPrimitive const* primitive, GMANParametric const& parametric,
                                        gman::InvertibleMatrix const& objectToCamera, RtFloat maxEdgeLength) {
   ParametricGrid const grid = chooseParametricResolution(parametric, objectToCamera.forward(), maxEdgeLength);
   std::size_t const nu = grid.nu;
@@ -813,12 +812,12 @@ void GMANRadiosityMesh::diceMesh(GMANRayPolygonMesh const& mesh, RtFloat maxEdge
   }
 }
 
-bool GMANRadiosityMesh::diceOne(GMANPrimitive* primitive, RtFloat maxEdgeLength) {
-  if (auto* polygon = dynamic_cast<GMANRayPolygon*>(primitive)) {
+bool GMANRadiosityMesh::diceOne(GMANPrimitive const* primitive, RtFloat maxEdgeLength) {
+  if (auto const* polygon = dynamic_cast<GMANRayPolygon const*>(primitive)) {
     dicePolygon(*polygon, maxEdgeLength);
     return true;
   }
-  if (auto* mesh = dynamic_cast<GMANRayPolygonMesh*>(primitive)) {
+  if (auto const* mesh = dynamic_cast<GMANRayPolygonMesh const*>(primitive)) {
     diceMesh(*mesh, maxEdgeLength);
     return true;
   }
@@ -827,7 +826,7 @@ bool GMANRadiosityMesh::diceOne(GMANPrimitive* primitive, RtFloat maxEdgeLength)
   if (!getQuadricObjectToCamera(primitive, objectToCamera)) {
     return false;
   }
-  auto* parametric = dynamic_cast<GMANParametric*>(primitive);
+  auto const* parametric = dynamic_cast<GMANParametric const*>(primitive);
   if (!parametric) {
     return false; // every quadric above is also GMANParametric; defensive
   }
@@ -842,7 +841,7 @@ bool GMANRadiosityMesh::diceOne(GMANPrimitive* primitive, RtFloat maxEdgeLength)
   return true;
 }
 
-void GMANRadiosityMesh::build(GMANWorldManager& worldManager, RtFloat maxEdgeLength) {
+void GMANRadiosityMesh::build(GMANWorld const& world, RtFloat maxEdgeLength) {
   nodes.clear();
   elements.clear();
   primitiveMeshes.clear();
@@ -851,12 +850,12 @@ void GMANRadiosityMesh::build(GMANWorldManager& worldManager, RtFloat maxEdgeLen
   skippedCount = 0;
   cappedCount = 0;
 
-  for (GMANPrimitive* primitive = worldManager.getFirst(); primitive; primitive = worldManager.getNext()) {
-    if (!dynamic_cast<GMANRayPrimitive*>(primitive)) {
+  for (auto const& primitive : world) {
+    if (!dynamic_cast<GMANRayPrimitive const*>(&primitive)) {
       ++skippedCount;
       continue;
     }
-    if (!diceOne(primitive, maxEdgeLength)) {
+    if (!diceOne(&primitive, maxEdgeLength)) {
       ++skippedCount;
     }
   }

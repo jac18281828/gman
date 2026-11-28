@@ -31,7 +31,6 @@
 #include "gman/export.h"
 #include "gmandenoise.h"
 #include "gmanemitter.h"
-#include "gmanlinearworldmanager.h"
 #include "gmanoptions.h"
 #include "gmanpoint.h"
 #include "gmanprimitivefactory.h"
@@ -42,7 +41,7 @@
 #include "gmanshading.h"
 #include "gmanvector.h"
 #include "gmanviewingsystem.h"
-#include "gmanworldmanager.h"
+#include "gmanworld.h"
 #include "ri.h"
 
 /*
@@ -58,7 +57,7 @@
  * contribution, then samples the surface's own BSDF (gman::bsdf) for its
  * next direction, subject to Russian roulette from its fourth vertex on. An
  * escaped ray adds beta times the background and ends the path. The
- * emitter set is gman::emitters(worldManager), gathered once at the top of
+ * emitter set is gman::emitters(world), gathered once at the top of
  * render(); ambientlight contributes nothing, since bounce light is what
  * it faked. A non-finite path -- a NaN or infinite channel anywhere in its
  * throughput, radiance or coverage estimate -- is dropped: it contributes
@@ -108,17 +107,15 @@ class GMAN_EXPORT GMANPathtraceRenderer : public GMANRenderer {
 private:
   GMANRayPrimitiveFactory primitiveFactory;
 
-  GMANLinearWorldManager worldManager;
-
-  // Rebuilt from worldManager at the top of every render() call, as
-  // GMANRaytraceRenderer's own bvh is.
+  // Rebuilt from the world render() borrows, at the top of every render()
+  // call, as GMANRaytraceRenderer's own bvh is.
   GMANRayBVH bvh;
 
   // The real per-slot colour and alpha store; resolved into frameBuffer
   // at the end of render(). getDepth reads its resolved depth.
   std::unique_ptr<GMANSampleBuffer> sampleBuffer;
 
-  // gman::emitters(worldManager): every delta light and eligible area
+  // gman::emitters(world): every delta light and eligible area
   // light in the scene. Gathered once at the top of render(); every vertex
   // samples the whole set, whatever its own hit primitive's own
   // appearance says.
@@ -158,10 +155,10 @@ private:
   // the denoise stage; empty otherwise.
   gman::GuidedImage guided;
 
-  // Fills emitters from worldManager and skippedAmbientLights from its own
+  // Fills emitters from world and skippedAmbientLights from its own
   // separate count -- gman::emitters excludes ambient lights silently,
   // with no count of its own to report.
-  void gatherLights();
+  void gatherLights(GMANWorld const& world);
 
   // Filters guided.color through gman::atrousDenoise, writes the result into
   // frameBuffer's pixels, leaving its alpha, and logs the parameters used.
@@ -176,8 +173,8 @@ public:
   RtVoid illuminate(RtInt /*i*/, GMANPoint const& /*p*/, GMANVector const& /*axis*/, RtFloat /*angle*/) {}
   RtVoid solar(RtInt /*i*/, GMANVector const& /*axis*/, RtFloat /*angle*/) {}
 
-  virtual void render(GMANFrameBuffer* frameBuffer, GMANViewingSystem* viewingSys, GMANOptions const& options,
-                      GMANAttributes const& attributes);
+  virtual void render(GMANWorld const& world, GMANFrameBuffer* frameBuffer, GMANViewingSystem* viewingSys,
+                      GMANOptions const& options, GMANAttributes const& attributes);
 
   // Camera-space z of the nearest sample at (x, y), RI_INFINITY where no
   // path's camera ray ever hit anything.
@@ -215,8 +212,6 @@ public:
   // with the albedo and normal guides beside it; empty after a render that
   // ran no denoise stage. Exported as setWorkers is, and for the same tests.
   gman::GuidedImage const& guidedImage() const { return guided; }
-
-  virtual GMANWorldManager* getWorldManager(void);
 
   virtual GMANPrimitiveFactory* getPrimitiveFactory(void);
 };

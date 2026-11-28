@@ -72,6 +72,7 @@
 #include "gmanvector.h"
 #include "gmanviewingsystem.h"
 #include "gmanvsperspective.h"
+#include "gmanworld.h"
 #include "pathtracerarealightscene.h"
 #include "pathtracerscene.h"
 #include "ri.h"
@@ -182,10 +183,10 @@ gman::VSPerspective sceneViewingSystem(SceneSize const& size, GMANMatrix4 const&
                              kSceneFar);
 }
 
-void renderScene(GMANPathtraceRenderer& renderer, GMANFrameBuffer& frameBuffer, GMANViewingSystem& viewingSys,
-                 GMANOptions const& options) {
+void renderScene(GMANPathtraceRenderer& renderer, GMANWorld const& world, GMANFrameBuffer& frameBuffer,
+                 GMANViewingSystem& viewingSys, GMANOptions const& options) {
   GMANAttributes const attributes;
-  renderer.render(&frameBuffer, &viewingSys, options, attributes);
+  renderer.render(world, &frameBuffer, &viewingSys, options, attributes);
 }
 
 // A floor lit by one point light, under an emitting sphere off to its side
@@ -201,6 +202,7 @@ struct SphereLitFloor {
   gman::VSPerspective viewingSys;
   GMANFrameBuffer frameBuffer;
   GMANPathtraceRenderer renderer;
+  GMANWorld world;
 
   SphereLitFloor(SceneSize const& size, RtInt workers)
       : pointLight(GMAN_LIGHT_POINT, GMANColor(kPointIntensity, kPointIntensity, kPointIntensity),
@@ -217,13 +219,13 @@ struct SphereLitFloor {
     appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
     appearance.lights = {&pointLight};
     floor->setAppearance(appearance);
-    renderer.getWorldManager()->add(std::move(floor));
-    addEmittingSphere(renderer, areaLight, kSphereRadius, kSphereCentreX, kSphereCentreY, kSphereCentreZ);
+    world.add(std::move(floor));
+    addEmittingSphere(world, areaLight, kSphereRadius, kSphereCentreX, kSphereCentreY, kSphereCentreZ);
 
     renderer.setWorkers(workers);
   }
 
-  void render() { renderScene(renderer, frameBuffer, viewingSys, options); }
+  void render() { renderScene(renderer, world, frameBuffer, viewingSys, options); }
 };
 
 bool colorsEqual(GMANColor const& a, GMANColor const& b) {
@@ -359,6 +361,7 @@ struct DropScene {
   gman::VSPerspective viewingSys;
   GMANFrameBuffer frameBuffer;
   GMANPathtraceRenderer renderer;
+  GMANWorld world;
 
   explicit DropScene(RtInt workers)
       : light(GMAN_LIGHT_POINT, GMANColor(kDropIntensity, kDropIntensity, kDropIntensity), GMANPoint(0.0f, 0.0f, 0.0f),
@@ -375,7 +378,7 @@ struct DropScene {
     appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
     appearance.lights = {&light};
     sphere->setAppearance(appearance);
-    renderer.getWorldManager()->add(std::move(sphere));
+    world.add(std::move(sphere));
     renderer.setWorkers(workers);
   }
 
@@ -384,7 +387,7 @@ struct DropScene {
     return GMANColor(nan, nan, nan);
   }
 
-  void render() { renderScene(renderer, frameBuffer, viewingSys, options); }
+  void render() { renderScene(renderer, world, frameBuffer, viewingSys, options); }
 
   double alphaSum() const {
     double sum = 0.0;
@@ -456,6 +459,7 @@ struct MissingTextureQuad {
   gman::VSPerspective viewingSys;
   GMANFrameBuffer frameBuffer;
   GMANPathtraceRenderer renderer;
+  GMANWorld world;
 
   explicit MissingTextureQuad(RtInt workers)
       : options(pathtracerOptions(kTextureSize, GMANColor(0.0f, 0.0f, 0.0f))),
@@ -469,11 +473,11 @@ struct MissingTextureQuad {
                                           GMANPoint(kQuadHalfExtent, -kQuadHalfExtent, kQuadDepth)};
     auto quad = gman::make<GMANRayPolygon>(verts, GMANParameterList());
     quad->setAppearance(paintedPlasticAppearance(kMissingTexture));
-    renderer.getWorldManager()->add(std::move(quad));
+    world.add(std::move(quad));
     renderer.setWorkers(workers);
   }
 
-  void render() { renderScene(renderer, frameBuffer, viewingSys, options); }
+  void render() { renderScene(renderer, world, frameBuffer, viewingSys, options); }
 };
 
 struct MissingTextureRun {

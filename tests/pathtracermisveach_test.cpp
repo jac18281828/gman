@@ -162,7 +162,7 @@ struct VeachScene {
   GMANPoint lightCentre;
 };
 
-VeachScene buildVeachScene(GMANPathtraceRenderer& renderer, GMANLight const& areaLight) {
+VeachScene buildVeachScene(GMANWorld& world, GMANLight const& areaLight) {
   double const phi = std::numbers::pi / 4.0; // 45 degrees
   GMANVector const u(1.0f, 0.0f, 0.0f);
   GMANVector const v(0.0f, (RtFloat)std::cos(phi), (RtFloat)std::sin(phi));
@@ -174,7 +174,7 @@ VeachScene buildVeachScene(GMANPathtraceRenderer& renderer, GMANLight const& are
   plateAppearance.Cs = GMANColor(1.0f, 1.0f, 1.0f);
   plateAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   plate->setAppearance(plateAppearance);
-  renderer.getWorldManager()->add(std::move(plate));
+  world.add(std::move(plate));
 
   // The boresight's own reflection direction: I = (0, 0, 1); the plate's
   // own normal is v cross u (matching buildFloor's own winding
@@ -188,7 +188,7 @@ VeachScene buildVeachScene(GMANPathtraceRenderer& renderer, GMANLight const& are
   GMANPoint const lightCentre(centre.getX() + reflected.getX() * kLightDistance,
                               centre.getY() + reflected.getY() * kLightDistance,
                               centre.getZ() + reflected.getZ() * kLightDistance);
-  addEmittingSphere(renderer, areaLight, kLightRadius, lightCentre.getX(), lightCentre.getY(), lightCentre.getZ());
+  addEmittingSphere(world, areaLight, kLightRadius, lightCentre.getX(), lightCentre.getY(), lightCentre.getZ());
 
   PlatePlane plane{normal, u, v, centre};
   return {plane, lightCentre};
@@ -210,15 +210,16 @@ std::unique_ptr<GMANFrameBuffer> renderVeach(bool misEnabled, std::uint32_t N, P
   gman::VSPerspective viewingSys(kRes, kRes, squareScreenWindow(), identity, kFovDegrees, 0.5f, 50.0f);
 
   auto renderer = std::make_unique<GMANPathtraceRenderer>();
+  GMANWorld world;
   renderer->setMultipleImportanceSampling(misEnabled);
   GMANLight const areaLight(GMAN_LIGHT_AREA, GMANColor(kAreaLe, kAreaLe, kAreaLe), GMANPoint(), GMANVector());
-  VeachScene const scene = buildVeachScene(*renderer, areaLight);
+  VeachScene const scene = buildVeachScene(world, areaLight);
   planeOut = scene.plate;
   lightCentreOut = scene.lightCentre;
 
   auto frameBuffer = std::make_unique<GMANFrameBuffer>(kRes, kRes, options.getBackground());
   GMANAttributes const attr;
-  renderer->render(frameBuffer.get(), &viewingSys, options, attr);
+  renderer->render(world, frameBuffer.get(), &viewingSys, options, attr);
   check(renderer->droppedPathCount() == 0, "Veach's plates: droppedPathCount() is 0");
   return frameBuffer;
 }

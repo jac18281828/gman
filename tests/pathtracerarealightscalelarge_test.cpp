@@ -46,6 +46,7 @@
 #include "gmantransform.h"
 #include "gmanvector.h"
 #include "gmanvsperspective.h"
+#include "gmanworld.h"
 #include "pathtracerarealightscene.h"
 #include "pathtracerscene.h"
 #include "ri.h"
@@ -118,13 +119,14 @@ void testScaledLargeOccludedFloor() {
                                  kFar * kScale);
 
   GMANPathtraceRenderer renderer;
+  GMANWorld world;
   auto floor = buildScaledFloor(kScale);
   gman::Appearance floorAppearance;
   floorAppearance.shader = loadShader("matte", matteParams(1.0f));
   floorAppearance.Cs = GMANColor(0.5f, 0.5f, 0.5f);
   floorAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   floor->setAppearance(floorAppearance);
-  renderer.getWorldManager()->add(std::move(floor));
+  world.add(std::move(floor));
 
   GMANMatrix4 place;
   place.trans(kSphereCentreX * kScale, kSphereCentreY * kScale, kSphereCentreZ * kScale);
@@ -137,7 +139,7 @@ void testScaledLargeOccludedFloor() {
   sphereAppearance.areaLight = &areaLight;
   sphereAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   sphere->setAppearance(sphereAppearance);
-  renderer.getWorldManager()->add(std::move(sphere));
+  world.add(std::move(sphere));
 
   // Concentric with the emitter and just larger: every segment from the
   // emitter's own surface to any point outside this shell crosses it.
@@ -148,11 +150,11 @@ void testScaledLargeOccludedFloor() {
   occluderAppearance.Cs = GMANColor(0.0f, 0.0f, 0.0f);
   occluderAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   occluder->setAppearance(occluderAppearance);
-  renderer.getWorldManager()->add(std::move(occluder));
+  world.add(std::move(occluder));
 
   GMANFrameBuffer frameBuffer(kFloorRes, kFloorRes, options.getBackground());
   GMANAttributes const attr;
-  renderer.render(&frameBuffer, &viewingSys, options, attr);
+  renderer.render(world, &frameBuffer, &viewingSys, options, attr);
   check(renderer.droppedPathCount() == 0, "scaled large occluded floor: droppedPathCount() is 0");
 
   std::size_t measuredCount = 0;

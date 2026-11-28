@@ -51,7 +51,6 @@
 #include <vector>
 
 #include "check.h"
-#include "gmanlinearworldmanager.h"
 #include "gmanlog.h"
 #include "gmanowned.h"
 #include "gmanray.h"
@@ -64,6 +63,7 @@
 #include "gmanraypolygon.h"
 #include "gmanraysphere.h"
 #include "gmanraytorus.h"
+#include "gmanworld.h"
 #include "maketransform.h"
 
 namespace {
@@ -171,13 +171,13 @@ void expectSameWork(GMANRayBVH const& bvh, GMANPoint const& origin, GMANVector c
 
 // ---- untraceable rays ----
 void testUntraceableRaysMiss() {
-  GMANLinearWorldManager worldManager;
+  GMANWorld world;
   for (std::size_t i = 0; i < 5; ++i) {
-    worldManager.add(
+    world.add(
         gman::make<GMANRaySphere>(0.4, -0.4, 0.4, 360.0, GMANParameterList(), translated((RtFloat)i * 3.0, 0.0, 0.0)));
   }
   GMANRayBVH bvh;
-  bvh.build(worldManager);
+  bvh.build(world);
 
   GMANPoint const origin(-5.0, 0.0, 0.0);
   GMANVector const along(1.0, 0.0, 0.0);
@@ -217,7 +217,7 @@ void testUntraceableRaysMiss() {
 
 // ---- a denormal component is an exact zero ----
 void testDenormalComponentIsParallel() {
-  GMANLinearWorldManager worldManager;
+  GMANWorld world;
   GMANPoint rootMin(kInfinity, kInfinity, kInfinity);
   GMANPoint rootMax(-kInfinity, -kInfinity, -kInfinity);
   for (std::size_t i = 0; i < 5; ++i) {
@@ -229,10 +229,10 @@ void testDenormalComponentIsParallel() {
                         std::fmin(rootMin.getZ(), lo.getZ()));
     rootMax = GMANPoint(std::fmax(rootMax.getX(), hi.getX()), std::fmax(rootMax.getY(), hi.getY()),
                         std::fmax(rootMax.getZ(), hi.getZ()));
-    worldManager.add(std::move(box));
+    world.add(std::move(box));
   }
   GMANRayBVH bvh;
-  bvh.build(worldManager);
+  bvh.build(world);
 
   expectSameWork(bvh, GMANPoint(-5.0, 0.0, rootMin.getZ()), GMANVector(1.0, 0.0, kDenormal), GMANVector(1.0, 0.0, 0.0),
                  "denormal: origin on the root's minimum z face");
@@ -307,21 +307,21 @@ bool sameHit(Probe const& a, Probe const& b) {
 
 // ---- a NaN box stays out of the tree ----
 void testNaNBoxStaysOut() {
-  GMANLinearWorldManager worldManager;
+  GMANWorld world;
   std::vector<GMANRayPrimitive*> valid;
   auto addValid = [&](gman::Owned<GMANRayPrimitive> primitive) {
     valid.push_back(primitive.get());
-    worldManager.add(std::move(primitive));
+    world.add(std::move(primitive));
   };
   auto nanBoxOwner = gman::make<NaNBoxPrimitive>();
   auto* const nanBox = nanBoxOwner.get();
   addValid(gman::make<GMANRaySphere>(1.0, -1.0, 1.0, 360.0, GMANParameterList(), translated(0.0, 0.0, 0.0)));
-  worldManager.add(std::move(nanBoxOwner));
+  world.add(std::move(nanBoxOwner));
   addValid(gman::make<GMANRayCylinder>(0.75, -1.0, 1.0, 360.0, GMANParameterList(), translated(3.0, 0.0, 0.0)));
   addValid(gman::make<GMANRaySphere>(1.0, -1.0, 1.0, 360.0, GMANParameterList(), translated(6.0, 0.0, 0.0)));
 
   GMANRayBVH bvh;
-  bvh.build(worldManager);
+  bvh.build(world);
 
   GMANBBox const span(GMANPoint(-1.0, -1.0, -1.0), GMANPoint(7.0, 1.0, 1.0));
   std::mt19937 rng(kSeed);
@@ -365,7 +365,7 @@ void testNaNBoxWarning() {
   setLogFile(logPath.c_str());
   setScreenOutput(false);
 
-  GMANLinearWorldManager withNaN;
+  GMANWorld withNaN;
   withNaN.add(gman::make<GMANRaySphere>(1.0, -1.0, 1.0, 360.0, GMANParameterList(), translated(0.0, 0.0, 0.0)));
   withNaN.add(gman::make<NaNBoxPrimitive>());
   withNaN.add(gman::make<GMANRaySphere>(1.0, -1.0, 1.0, 360.0, GMANParameterList(), translated(3.0, 0.0, 0.0)));
@@ -379,7 +379,7 @@ void testNaNBoxWarning() {
   bvh.build(withNaN);
   std::size_t const afterSecond = countWarnings(logPath, anyCount);
 
-  GMANLinearWorldManager valid;
+  GMANWorld valid;
   valid.add(gman::make<GMANRaySphere>(1.0, -1.0, 1.0, 360.0, GMANParameterList(), translated(0.0, 0.0, 0.0)));
   valid.add(gman::make<GMANRaySphere>(1.0, -1.0, 1.0, 360.0, GMANParameterList(), translated(3.0, 0.0, 0.0)));
   bvh.build(valid);
@@ -422,11 +422,11 @@ struct Placed {
   GMANRayPrimitive* primitive;
 };
 
-std::vector<Placed> placeEveryIntersector(GMANLinearWorldManager& worldManager) {
+std::vector<Placed> placeEveryIntersector(GMANWorld& world) {
   std::vector<Placed> placed;
   auto add = [&](std::string const& name, gman::Owned<GMANRayPrimitive> primitive) {
     placed.push_back({name, primitive.get()});
-    worldManager.add(std::move(primitive));
+    world.add(std::move(primitive));
   };
   RtPoint spanningFrom = {1.0f, 0.0f, -1.0f};
   RtPoint spanningTo = {0.5f, 0.5f, 1.0f};
@@ -466,10 +466,10 @@ std::vector<Placed> placeEveryIntersector(GMANLinearWorldManager& worldManager) 
 
 // ---- no hit carries a non-finite field ----
 void testNoHitCarriesNonFiniteField() {
-  GMANLinearWorldManager worldManager;
-  std::vector<Placed> const placed = placeEveryIntersector(worldManager);
+  GMANWorld world;
+  std::vector<Placed> const placed = placeEveryIntersector(world);
   GMANRayBVH bvh;
-  bvh.build(worldManager);
+  bvh.build(world);
 
   GMANRay const torusProbe(GMANPoint(-1.0, -1.5, -0.25), GMANVector(1e-25f, 1.0f, 0.0f));
   GMANHit probeHit;

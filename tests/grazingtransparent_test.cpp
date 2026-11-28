@@ -62,6 +62,7 @@
 #include "gmantransform.h"
 #include "gmanvector.h"
 #include "gmanvsperspective.h"
+#include "gmanworld.h"
 #include "maketransform.h"
 #include "ri.h"
 
@@ -99,6 +100,7 @@ int main() {
   gman::VSPerspective viewingSys(kResX, kResY, silhouetteScreenWindow(), identity, 90.0, 0.5, 100.0);
 
   GMANRaytraceRenderer renderer;
+  GMANWorld world;
   GMANAttributes attr;
   RtColor opacity = {kOpacity, kOpacity, kOpacity};
   attr.setOpacity(opacity);
@@ -109,11 +111,11 @@ int main() {
   auto sphere =
       gman::make<GMANRaySphere>(kSphereRadius, -kSphereRadius, kSphereRadius, 360.0f, GMANParameterList(), transform);
   sphere->setAppearance(gman::appearanceOf(attr));
-  renderer.getWorldManager()->add(std::move(sphere));
+  world.add(std::move(sphere));
 
   GMANColor const background(1.0f, 1.0f, 1.0f);
   GMANFrameBuffer frameBuffer(kResX, kResY, background);
-  renderer.render(&frameBuffer, &viewingSys, options, attr);
+  renderer.render(world, &frameBuffer, &viewingSys, options, attr);
   GMANColor const pixel = frameBuffer.getPixel(kCheckColumn, 0);
 
   RtFloat const twoLayers = (1.0f - kOpacity) * (1.0f - kOpacity) * background.getRed();

@@ -37,7 +37,6 @@
 
 #include "check.h"
 #include "gmanlightsourcemgr.h"
-#include "gmanlinearworldmanager.h"
 #include "gmanmatrix4.h"
 #include "gmanowned.h"
 #include "gmanparameterlist.h"
@@ -48,6 +47,7 @@
 #include "gmanraysphere.h"
 #include "gmantransform.h"
 #include "gmanvector.h"
+#include "gmanworld.h"
 #include "maketransform.h"
 #include "ri.h"
 
@@ -68,7 +68,7 @@ gman::Owned<GMANRaySphere> sphereAt(RtFloat x, RtFloat y, RtFloat z) {
 // A probe primitive that, when armed, casts a second nearestHit against
 // the same bvh for a fixed, unrelated ray before delegating to a real
 // sphere for its own answer. Owns delegate: every other primitive in these
-// fixtures is built the same way, held by a GMANLinearWorldManager that
+// fixtures is built the same way, held by a GMANWorld that
 // destroys what it holds.
 class NestingProbe : public GMANRayPrimitive {
 public:
@@ -106,7 +106,7 @@ bool nearestHitsAgree(bool foundA, GMANRayPrimitive const* primA, RtFloat tA, bo
 }
 
 void testNearestHitReentrant() {
-  GMANLinearWorldManager worldManager;
+  GMANWorld world;
 
   // The inner ray's own target: off the outer ray's line (y == 0.6), so
   // the outer ray cannot hit it directly; the far leaf's own union box
@@ -121,10 +121,10 @@ void testNearestHitReentrant() {
   // genuinely misses the outer ray.
   auto realProbeOwner = gman::make<NestingProbe>(sphereAt(2.0, 0.6, 0.0), bvh, innerRay);
   auto* const realProbe = realProbeOwner.get();
-  worldManager.add(sphereAt(0.0, 0.6, 0.0));
-  worldManager.add(sphereAt(1.0, -0.6, 0.0));
-  worldManager.add(std::move(realProbeOwner));
-  worldManager.add(sphereAt(3.0, -0.6, 0.0));
+  world.add(sphereAt(0.0, 0.6, 0.0));
+  world.add(sphereAt(1.0, -0.6, 0.0));
+  world.add(std::move(realProbeOwner));
+  world.add(sphereAt(3.0, -0.6, 0.0));
 
   // Far leaf: the outer ray's only real hit (trueTarget, on its exact
   // line), the inner ray's own real target (innerTarget, off the outer
@@ -133,12 +133,12 @@ void testNearestHitReentrant() {
   auto* const trueTarget = trueTargetOwner.get();
   auto innerTargetOwner = sphereAt(11.0, 0.6, 0.0);
   auto* const innerTarget = innerTargetOwner.get();
-  worldManager.add(std::move(trueTargetOwner));
-  worldManager.add(std::move(innerTargetOwner));
-  worldManager.add(sphereAt(12.0, -0.6, 0.0));
-  worldManager.add(sphereAt(13.0, 0.6, 0.0));
+  world.add(std::move(trueTargetOwner));
+  world.add(std::move(innerTargetOwner));
+  world.add(sphereAt(12.0, -0.6, 0.0));
+  world.add(sphereAt(13.0, 0.6, 0.0));
 
-  bvh.build(worldManager);
+  bvh.build(world);
 
   GMANRay const outerRay(GMANPoint(-100.0, 0.0, 0.0), GMANVector(1.0, 0.0, 0.0));
 
@@ -218,7 +218,7 @@ void setOpaque(GMANRayPrimitive* primitive) {
 }
 
 void testOccluderReentrant() {
-  GMANLinearWorldManager worldManager;
+  GMANWorld world;
 
   GMANLight const innerLight(GMAN_LIGHT_DISTANT, GMANColor(1.0f, 1.0f, 1.0f), GMANPoint(), GMANVector(0.0, 0.0, -1.0));
   GMANPoint const innerP(11.0, 0.6, -50.0);
@@ -240,10 +240,10 @@ void testOccluderReentrant() {
   setOpaque(nearA.get());
   setOpaque(nearB.get());
   setOpaque(nearC.get());
-  worldManager.add(std::move(nearA));
-  worldManager.add(std::move(nearB));
-  worldManager.add(std::move(probeOwner));
-  worldManager.add(std::move(nearC));
+  world.add(std::move(nearA));
+  world.add(std::move(nearB));
+  world.add(std::move(probeOwner));
+  world.add(std::move(nearC));
 
   auto trueBlocker = sphereAt(10.0, 0.0, 0.0);
   auto innerBlocker = sphereAt(11.0, 0.6, 0.0);
@@ -253,12 +253,12 @@ void testOccluderReentrant() {
   setOpaque(innerBlocker.get());
   setOpaque(farB.get());
   setOpaque(farC.get());
-  worldManager.add(std::move(trueBlocker));
-  worldManager.add(std::move(innerBlocker));
-  worldManager.add(std::move(farB));
-  worldManager.add(std::move(farC));
+  world.add(std::move(trueBlocker));
+  world.add(std::move(innerBlocker));
+  world.add(std::move(farB));
+  world.add(std::move(farC));
 
-  bvh.build(worldManager);
+  bvh.build(world);
 
   GMANPoint const outerP(-100.0, 0.0, 0.0);
   GMANVector const outerTowardLight(1.0, 0.0, 0.0);
